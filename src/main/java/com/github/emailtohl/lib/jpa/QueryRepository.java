@@ -45,7 +45,7 @@ import org.springframework.data.jpa.repository.query.QueryUtils;
  * 
  * @author HeLei
  */
-public abstract class QueryRepository<E, ID extends Serializable> extends JpaRepository<E, ID> {
+public abstract class QueryRepository<E, ID extends Serializable> extends EntityRepository<E, ID> implements QueryInterface<E, ID> {
 	private static final ConcurrentHashMap<Class<?>, Set<EntityProperty>> PROP_CACHE = new ConcurrentHashMap<Class<?>, Set<EntityProperty>>();
 	private static final ConcurrentHashMap<Class<?>, Set<Condition>> CONDITION_CACHE = new ConcurrentHashMap<Class<?>, Set<Condition>>();
 	private static final Set<Class<?>> PRIMITIVES = new HashSet<Class<?>>(Arrays.asList(int.class, long.class,

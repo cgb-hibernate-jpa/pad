@@ -7,7 +7,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class JpaRepositoryTest {
+public class EntityRepositoryTest {
 
 	@Before
 	public void setUp() throws Exception {
@@ -50,13 +50,13 @@ public class JpaRepositoryTest {
 
 }
 
-abstract class LeftDefined<A extends Serializable> extends JpaRepository<String, A> {
+abstract class LeftDefined<A extends Serializable> extends EntityRepository<String, A> {
 }
 
-abstract class RightDefined<B extends Serializable> extends JpaRepository<B, Long> {
+abstract class RightDefined<B extends Serializable> extends EntityRepository<B, Long> {
 }
 
-abstract class PairDefined extends JpaRepository<String, Long> {
+abstract class PairDefined extends EntityRepository<String, Long> {
 }
 
 class Left extends LeftDefined<Long> {
@@ -68,12 +68,12 @@ class Right extends RightDefined<String> {
 class Pair extends PairDefined {
 }
 
-class SpecificLeftDefined<A extends Serializable> extends JpaRepository<String, Long> {
+class SpecificLeftDefined<A extends Serializable> extends EntityRepository<String, Long> {
 }
 
-class SpecificRightDefined<B extends Serializable> extends JpaRepository<String, Long> {
+class SpecificRightDefined<B extends Serializable> extends EntityRepository<String, Long> {
 }
 
-class SpecificPairDefined<A extends Serializable, B extends Serializable> extends JpaRepository<A, B> {
+class SpecificPairDefined<A extends Serializable, B extends Serializable> extends EntityRepository<A, B> {
 }
 

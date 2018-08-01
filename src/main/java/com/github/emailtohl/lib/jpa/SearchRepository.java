@@ -31,7 +31,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
  * @param <ID>
  *            实体的ID类型
  */
-public abstract class SearchRepository<E, ID extends Serializable> extends QueryRepository<E, ID> {
+public abstract class SearchRepository<E, ID extends Serializable> extends QueryRepository<E, ID> implements SearchInterface<E, ID> {
 	private static volatile boolean IS_INIT = false;
 	protected final String[] onFields;
 
@@ -119,6 +119,12 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 		return fem.createFullTextQuery(lucene, entityClass);
 	}
 
+	/**
+	 * 分页查询与query关键字相关的实体对象
+	 * @param query 字符串关键字
+	 * @param pageable 分页排序对象
+	 * @return 查询结果
+	 */
 	public Page<E> search(String query, Pageable pageable) {
 		FullTextQuery ftq;
 		try {
@@ -133,6 +139,11 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 		return new PageImpl<>(ls, pageable, total);
 	}
 
+	/**
+	 * 查询与query关键字相关的实体对象列表
+	 * @param query 字符串关键字
+	 * @return 结果集合
+	 */
 	@SuppressWarnings("unchecked")
 	public List<E> search(String query) {
 		return getLuceneQuery(query).getResultList();

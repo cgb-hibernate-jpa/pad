@@ -14,14 +14,16 @@ import org.hibernate.envers.query.AuditEntity;
 import org.hibernate.envers.query.AuditQuery;
 
 /**
- * 获取实体历史信息
- * 需要为实体及其关联类添加上org.hibernate.envers.Audited注解
+ * 获取实体历史信息 需要为实体及其关联类添加上org.hibernate.envers.Audited注解
  * 
  * @author HeLei
- * @param <E> 实体类型
- * @param <ID> 实体的ID类型
+ * @param <E>
+ *            实体类型
+ * @param <ID>
+ *            实体的ID类型
  */
-public abstract class AuditedRepository<E, ID extends Serializable> extends SearchRepository<E, ID> {
+public abstract class AuditedRepository<E, ID extends Serializable> extends SearchRepository<E, ID>
+		implements AuditedInterface<E, ID> {
 
 	public AuditedRepository() {
 	}
@@ -33,7 +35,8 @@ public abstract class AuditedRepository<E, ID extends Serializable> extends Sear
 	/**
 	 * 查询某个实体的历次修订版本
 	 * 
-	 * @param id 实体对象的id
+	 * @param id
+	 *            实体对象的id
 	 * @return 在Tuple#defaultRevisionEntity中获取到修订id
 	 */
 	@SuppressWarnings("unchecked")
@@ -55,8 +58,10 @@ public abstract class AuditedRepository<E, ID extends Serializable> extends Sear
 	/**
 	 * 查询某个实体在某个修订版时的历史记录
 	 * 
-	 * @param id 实体的id
-	 * @param revision 版本号
+	 * @param id
+	 *            实体的id
+	 * @param revision
+	 *            版本号
 	 * @return 某修订版时候的记录
 	 */
 	public E getEntityAtRevision(ID id, Number revision) {
@@ -66,8 +71,11 @@ public abstract class AuditedRepository<E, ID extends Serializable> extends Sear
 
 	/**
 	 * 将实体回滚到某历史版本上
-	 * @param id 实体的id
-	 * @param revision 修订号
+	 * 
+	 * @param id
+	 *            实体的id
+	 * @param revision
+	 *            修订号
 	 */
 	public void rollback(ID id, Number revision) {
 		AuditReader auditReader = AuditReaderFactory.get(entityManager);
@@ -75,6 +83,12 @@ public abstract class AuditedRepository<E, ID extends Serializable> extends Sear
 		entityManager.unwrap(Session.class).replicate(bygone, ReplicationMode.IGNORE);
 	}
 
+	/**
+	 * 将实体历史版本的信息进行封装，包含历史版本的快照，修订版的版本号，修改的类型等
+	 * 
+	 * @param <E>
+	 *            实体类
+	 */
 	public static class Tuple<E> {
 		public final E entity;
 		public final DefaultRevisionEntity defaultRevisionEntity;

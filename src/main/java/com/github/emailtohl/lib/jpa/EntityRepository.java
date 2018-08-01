@@ -17,9 +17,13 @@ import org.springframework.stereotype.Repository;
  * 基本JPA仓库
  * 
  * @author HeLei
+ * @param <E>
+ *            实体类型
+ * @param <ID>
+ *            实体的ID类型
  */
 @Repository
-public abstract class JpaRepository<E, ID extends Serializable> {
+public abstract class EntityRepository<E, ID extends Serializable> implements EntityInterface<E, ID> {
 	protected static final Logger LOG = LogManager.getLogger();
 	protected final Class<E> entityClass;
 	protected final Class<ID> idClass;
@@ -32,17 +36,17 @@ public abstract class JpaRepository<E, ID extends Serializable> {
 	 */
 	EntityInspector entityInspector = new EntityInspector();
 
-	protected JpaRepository(Class<E> entityClass, Class<ID> idClass) {
+	protected EntityRepository(Class<E> entityClass, Class<ID> idClass) {
 		this.entityClass = entityClass;
 		this.idClass = idClass;
 	}
 
 	@SuppressWarnings("unchecked")
-	protected JpaRepository() {
+	protected EntityRepository() {
 		Class<?>[] classes = new Class[2];
 		Class<?> tempClass = null;
 		Class<?> clz = this.getClass();
-		while (clz != JpaRepository.class) {
+		while (clz != EntityRepository.class) {
 			Type genericSuperclass = clz.getGenericSuperclass();
 			if (genericSuperclass instanceof ParameterizedType) {
 				ParameterizedType type = (ParameterizedType) genericSuperclass;
@@ -94,7 +98,7 @@ public abstract class JpaRepository<E, ID extends Serializable> {
 	 * @param primaryKey 主键
 	 * @return 该主键的实体对象
 	 */
-	protected E find(ID primaryKey) {
+	public E find(ID primaryKey) {
 		return entityManager.find(entityClass, primaryKey);
 	}
 	
@@ -102,7 +106,7 @@ public abstract class JpaRepository<E, ID extends Serializable> {
 	 * 保存实体，修改实体则是通过find找到它并修改它即可
 	 * @param entity 实体对象
 	 */
-	protected void persist(E entity) {
+	public void persist(E entity) {
 		entityManager.persist(entity);
 	}
 	
@@ -110,7 +114,7 @@ public abstract class JpaRepository<E, ID extends Serializable> {
 	 * 删除实体
 	 * @param entity 实体对象
 	 */
-	protected void remove(E entity) {
+	public void remove(E entity) {
 		entityManager.remove(entity);
 	}
 }
