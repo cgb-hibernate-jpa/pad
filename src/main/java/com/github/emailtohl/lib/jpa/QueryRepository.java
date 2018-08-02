@@ -29,6 +29,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaBuilder.In;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Path;
@@ -71,29 +72,31 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		CriteriaBuilder b = entityManager.getCriteriaBuilder();
 		CriteriaQuery<E> q = b.createQuery(entityClass);
 		Root<E> r = q.from(entityClass);
-		if (example == null) {
-			q = q.select(r);
-		} else {
+		q = q.select(r);
+		if (example != null) {
 			Set<Predicate> predicates = getPredicates(example, r, b);
-			Predicate[] restrictions = new Predicate[predicates.size()];
-			q = q.select(r).where(predicates.toArray(restrictions))
-					.orderBy(QueryUtils.toOrders(pageable.getSort(), r, b));
+			if (predicates.size() > 0) {
+				Predicate[] restrictions = new Predicate[predicates.size()];
+				q = q.where(predicates.toArray(restrictions));
+			}
 		}
+		q = q.orderBy(QueryUtils.toOrders(pageable.getSort(), r, b));
 		List<E> result = entityManager.createQuery(q).setFirstResult((int) pageable.getOffset())
 				.setMaxResults(pageable.getPageSize()).getResultList();
 
 		CriteriaQuery<Long> c = b.createQuery(Long.class);
 		r = c.from(entityClass);
-		if (example == null) {
-			c = c.select(b.count(r));
-		} else {
+		c = c.select(b.count(r));
+		if (example != null) {
 			Set<Predicate> predicates = getPredicates(example, r, b);
-			Predicate[] restrictions = new Predicate[predicates.size()];
-			c = c.select(b.count(r)).where(predicates.toArray(restrictions));
+			if (predicates.size() > 0) {
+				Predicate[] restrictions = new Predicate[predicates.size()];
+				c = c.where(predicates.toArray(restrictions));
+			}
 		}
 		Long total = entityManager.createQuery(c).getSingleResult();
 
-		return new PageImpl<E>(new ArrayList<E>(result), pageable, total);
+		return new PageImpl<E>(result, pageable, total);
 	}
 
 	/**
@@ -107,12 +110,13 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		CriteriaBuilder b = entityManager.getCriteriaBuilder();
 		CriteriaQuery<E> q = b.createQuery(entityClass);
 		Root<E> r = q.from(entityClass);
-		if (example == null) {
-			q = q.select(r);
-		} else {
+		q = q.select(r);
+		if (example != null) {
 			Set<Predicate> set = getPredicates(example, r, b);
-			Predicate[] restrictions = new Predicate[set.size()];
-			q = q.select(r).where(set.toArray(restrictions));
+			if (set.size() > 0) {
+				Predicate[] restrictions = new Predicate[set.size()];
+				q = q.where(set.toArray(restrictions));
+			}
 		}
 		return entityManager.createQuery(q).getResultList();
 	}
@@ -138,6 +142,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		class Closure {
 			private static final String IS_NULL = "IS NULL";
 			private static final String IS_NOT_NULL = "IS NOT NULL";
+			private static final String MEMBER_OF = "MEMBER OF";
 			private final Set<Object> used = new HashSet<Object>();
 
 			@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -187,11 +192,13 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							Path<?> path = prefix.get(prop.name);
 							exec(value, path, parentPath + '.' + prop.name);
 						} else if (value instanceof Collection) {
-							Collection<?> values = (Collection<?>) value;
+							Collection<Object> values = (Collection<Object>) value;
 							if (elementCollection != null && availableCollection(values)) {
-								Path<?> path = prefix.get(prop.name);
-								predicates.add(path.in(values));
-								log(parentPath, prop.name, "IN", values);
+								Path<Collection<Object>> path = prefix.get(prop.name);
+								for (Object v : values) {
+									cb.isMember(v, path);
+									log(parentPath, prop.name, MEMBER_OF, v);
+								}
 							} else if (prefix == root// Join只在root层有效，用==进行严格判断
 									&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
 								Join<?, ?> join = root.join(prop.name);
@@ -277,8 +284,12 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						break;
 					case IN:
 						if (availableCollection(value)) {
+							In<Object> in = cb.in(path);
 							Collection<?> values = toCollection(value);
-							predicates.add(path.in(values));
+							for (Object v : values) {
+								in = in.value(v);
+							}
+							predicates.add(in);
 							log(parentPath, condition.propertyName, "IN", values);
 						}
 						break;
@@ -297,21 +308,35 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 			}
 
 			void log(String parentPath, String propertyName, String operator, Object o) {
+				if (!LOG.isDebugEnabled()) {
+					return;
+				}
 				if (first[0]) {
 					first[0] = false;
 				} else {
 					trace.append(" AND ");
 				}
-				trace.append(parentPath).append('.').append(propertyName).append(' ').append(operator).append(' ');
-				if (o instanceof String && !(IS_NULL.equals(operator) || IS_NOT_NULL.equals(operator))) {
-					trace.append('\'').append(o).append('\'');
+				if (MEMBER_OF.equals(operator)) {
+					if (o instanceof String) {
+						trace.append('\'').append(o).append('\'');
+					} else {
+						trace.append(o);
+					}
+					trace.append(' ').append(operator).append(' ').append(parentPath).append('.').append(propertyName);
 				} else {
-					trace.append(o);
+					trace.append(parentPath).append('.').append(propertyName).append(' ').append(operator).append(' ');
+					if (o instanceof String && !(IS_NULL.equals(operator) || IS_NOT_NULL.equals(operator))) {
+						trace.append('\'').append(o).append('\'');
+					} else {
+						trace.append(o);
+					}
 				}
 			}
 		}
 		new Closure().exec(example, root, entityClass.getSimpleName());
-		LOG.debug(trace.toString());
+		if (LOG.isDebugEnabled()) {
+			LOG.debug(trace.toString());
+		}
 		return predicates;
 	}
 

@@ -17,11 +17,14 @@ import java.util.regex.Pattern;
 
 import javax.persistence.Access;
 import javax.persistence.AccessType;
+import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
 import javax.persistence.MappedSuperclass;
+import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 
 import org.apache.logging.log4j.LogManager;
@@ -334,6 +337,13 @@ class EntityInspector {
 		if (method == null) {
 			method = p.getWriteMethod();
 		}
+		ElementCollection elementCollection = method.getAnnotation(ElementCollection.class);
+		OneToMany oneToMany = method.getAnnotation(OneToMany.class);
+		ManyToMany manyToMany = method.getAnnotation(ManyToMany.class);
+		Class<?> targetClass = getTargetClass(elementCollection, oneToMany, manyToMany);
+		if (!void.class.equals(targetClass)) {
+			return new Class<?>[] {targetClass};
+		}
 		String genericString = method.toGenericString();
 		LOG.debug("genericString: {}", genericString);
 		Matcher m = GENERIC_PATTERN.matcher(genericString);
@@ -357,6 +367,13 @@ class EntityInspector {
 	 * @return
 	 */
 	Class<?>[] getGenericClass(Field f) {
+		ElementCollection elementCollection = f.getAnnotation(ElementCollection.class);
+		OneToMany oneToMany = f.getAnnotation(OneToMany.class);
+		ManyToMany manyToMany = f.getAnnotation(ManyToMany.class);
+		Class<?> targetClass = getTargetClass(elementCollection, oneToMany, manyToMany);
+		if (!void.class.equals(targetClass)) {
+			return new Class<?>[] {targetClass};
+		}
 		List<Class<?>> ls = new ArrayList<Class<?>>();
 		String genericString = f.getGenericType().toString();
 		LOG.debug("genericString: {}", genericString);
@@ -374,4 +391,16 @@ class EntityInspector {
 		return ls.toArray(cs);
 	}
 
+	private Class<?> getTargetClass(ElementCollection elementCollection, OneToMany oneToMany, ManyToMany manyToMany) {
+		if (elementCollection != null) {
+			return elementCollection.targetClass();
+		}
+		if (oneToMany != null) {
+			return oneToMany.targetEntity();
+		}
+		if (manyToMany != null) {
+			return manyToMany.targetEntity();
+		}
+		return void.class;
+	}
 }
