@@ -196,7 +196,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							if (elementCollection != null && availableCollection(values)) {
 								Path<Collection<Object>> path = prefix.get(prop.name);
 								for (Object v : values) {
-									cb.isMember(v, path);
+									predicates.add(cb.isMember(v, path));
 									log(parentPath, prop.name, MEMBER_OF, v);
 								}
 							} else if (prefix == root// Join只在root层有效，用==进行严格判断

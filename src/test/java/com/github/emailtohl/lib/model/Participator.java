@@ -1,5 +1,9 @@
 package com.github.emailtohl.lib.model;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
@@ -25,6 +29,8 @@ public class Participator extends BaseEntity {
     protected boolean activated;
 
     protected Address homeAddress;
+    
+    protected Set<String> loginNames = new LinkedHashSet<>();
 
     public Participator() {
     }
@@ -42,6 +48,10 @@ public class Participator extends BaseEntity {
 		this.name = name;
 	}
 
+	public boolean isActivated() {
+		return activated;
+	}
+
 	public void setActivated(boolean activated) {
         this.activated = activated;
     }
@@ -54,6 +64,15 @@ public class Participator extends BaseEntity {
     public void setHomeAddress(Address homeAddress) {
         this.homeAddress = homeAddress;
     }
+
+    @ElementCollection
+	public Set<String> getLoginNames() {
+		return loginNames;
+	}
+
+	public void setLoginNames(Set<String> loginNames) {
+		this.loginNames = loginNames;
+	}
 
     // ...
 }

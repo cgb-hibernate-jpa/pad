@@ -59,9 +59,17 @@ class Entities {
 
 	public Entities() {
 		foo.setHomeAddress(fooAddress);
+		foo.getLoginNames().add("foo");
+		foo.getLoginNames().add("foo@localhost");
 		bar.setHomeAddress(barAddress);
+		bar.getLoginNames().add("bar");
+		bar.getLoginNames().add("bar@localhost");
 		baz.setHomeAddress(bazAddress);
+		baz.getLoginNames().add("baz");
+		baz.getLoginNames().add("baz@localhost");
 		qux.setHomeAddress(quxAddress);
+		qux.getLoginNames().add("qux");
+		qux.getLoginNames().add("qux@localhost");
 
 		purpleOutfit.setSeller(foo);
 		purpleOutfit.setApproved(true);

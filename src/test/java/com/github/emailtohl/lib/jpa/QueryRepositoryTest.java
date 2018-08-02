@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -36,10 +37,12 @@ import com.github.emailtohl.lib.entities.session.SessionForm;
 import com.github.emailtohl.lib.entities.session.SpringSession;
 import com.github.emailtohl.lib.entities.session.SpringSessionAttributes;
 import com.github.emailtohl.lib.model.Address;
+import com.github.emailtohl.lib.model.AuctionType;
 import com.github.emailtohl.lib.model.Category;
 import com.github.emailtohl.lib.model.Image;
 import com.github.emailtohl.lib.model.Item;
 import com.github.emailtohl.lib.model.Participator;
+import com.github.emailtohl.lib.util.LocalDateUtil;
 
 public class QueryRepositoryTest extends TestEnvironment {
 	private ObjectMapper om = new ObjectMapper();
@@ -66,8 +69,15 @@ public class QueryRepositoryTest extends TestEnvironment {
 		Pageable pageable = PageRequest.of(0, 20);
 		Page<Item> page = itemRepo.queryForPage(null, pageable);
 		assertTrue(page.getSize() > 0);
-		
-		Item example = new Item();
+		// 自定义查询条件
+		class QueryItem extends Item {
+			private static final long serialVersionUID = 5903837845910494789L;
+			@Instruction(propertyName = "auctionType", operator = Operator.IN)
+			public AuctionType[] in = new AuctionType[] {AuctionType.HIGHEST_BID, AuctionType.LOWEST_BID};
+			@Instruction(propertyName = "auctionEnd", operator = Operator.LTE)
+			public Date auctionEndLte = LocalDateUtil.toDate(LocalDate.now().plusDays(100));
+		}
+		QueryItem example = new QueryItem();
 		example.setCreatedOn(purpleOutfit.getCreatedOn());
 		example.setApproved(true);
 		example.setBuyNowPrice(new BigDecimal(500.00));
@@ -75,6 +85,8 @@ public class QueryRepositoryTest extends TestEnvironment {
 		Address fooAddress = new Address("street1", "12345", "city");
 		Participator foo = new Participator("foo");
 		foo.setHomeAddress(fooAddress);
+		foo.getLoginNames().add("foo");
+		foo.getLoginNames().add("foo@localhost");
 		example.setSeller(foo);
 		Category sup = new Category("super"), sub = new Category("sub", sup);
 		
