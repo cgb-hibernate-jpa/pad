@@ -32,6 +32,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaBuilder.In;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
@@ -201,7 +202,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 								}
 							} else if (prefix == root// Join只在root层有效，用==进行严格判断
 									&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
-								Join<?, ?> join = root.join(prop.name);
+								// 查询以root为准，所以任何连接都是左连接，否则右边连接表若为空就会出现查询不到结果的情况
+								Join<?, ?> join = root.join(prop.name, JoinType.LEFT);
 								for (Object component : values) {
 									exec(component, join, prop.name);
 								}
