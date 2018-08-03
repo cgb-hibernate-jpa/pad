@@ -74,7 +74,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		CriteriaBuilder b = entityManager.getCriteriaBuilder();
 		CriteriaQuery<E> q = b.createQuery(entityClass);
 		Root<E> r = q.from(entityClass);
-		q = q.select(r);
+		q = q.select(r).distinct(true);
 		if (example != null) {
 			Set<Predicate> predicates = getPredicates(example, r, b);
 			if (predicates.size() > 0) {
@@ -88,7 +88,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 
 		CriteriaQuery<Long> c = b.createQuery(Long.class);
 		r = c.from(entityClass);
-		c = c.select(b.count(r));
+		c = c.select(b.count(r)).distinct(true);
 		if (example != null) {
 			Set<Predicate> predicates = getPredicates(example, r, b);
 			if (predicates.size() > 0) {
@@ -112,7 +112,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		CriteriaBuilder b = entityManager.getCriteriaBuilder();
 		CriteriaQuery<E> q = b.createQuery(entityClass);
 		Root<E> r = q.from(entityClass);
-		q = q.select(r);
+		q = q.select(r).distinct(true);
 		if (example != null) {
 			Set<Predicate> set = getPredicates(example, r, b);
 			if (set.size() > 0) {
