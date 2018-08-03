@@ -47,7 +47,8 @@ import org.springframework.data.jpa.repository.query.QueryUtils;
  * 
  * @author HeLei
  */
-public abstract class QueryRepository<E, ID extends Serializable> extends EntityRepository<E, ID> implements QueryInterface<E, ID> {
+public abstract class QueryRepository<E, ID extends Serializable> extends EntityRepository<E, ID>
+		implements QueryInterface<E, ID> {
 	private static final ConcurrentHashMap<Class<?>, Set<EntityProperty>> PROP_CACHE = new ConcurrentHashMap<Class<?>, Set<EntityProperty>>();
 	private static final ConcurrentHashMap<Class<?>, Set<Condition>> CONDITION_CACHE = new ConcurrentHashMap<Class<?>, Set<Condition>>();
 	private static final Set<Class<?>> PRIMITIVES = new HashSet<Class<?>>(Arrays.asList(int.class, long.class,
@@ -202,7 +203,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 								}
 							} else if (prefix == root// Join只在root层有效，用==进行严格判断
 									&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
-								// 查询以root为准，所以任何连接都是左连接，否则右边连接表若为空就会出现查询不到结果的情况
+								// 连接为LEFT JOIN，若使用默认的INNER JOIN则查询结果会受到右边连接表影响
 								Join<?, ?> join = root.join(prop.name, JoinType.LEFT);
 								for (Object component : values) {
 									exec(component, join, prop.name);

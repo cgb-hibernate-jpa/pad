@@ -51,6 +51,8 @@ public class QueryRepositoryTest extends TestEnvironment {
 	@Autowired
 	private ItemRepo itemRepo;
 	@Autowired
+	private ParticipatorRepo participatorRepo;
+	@Autowired
 	private SpringSessionRepo springSessionRepo;
 	@Autowired
 	private EntityManagerFactory factory;
@@ -126,6 +128,11 @@ public class QueryRepositoryTest extends TestEnvironment {
 		
 		ls = itemRepo.queryForList(example);
 		assertTrue(ls.size() > 0);
+		
+		// 测试loginNames为空的时候，使用LEFT JOIN仍然能查找到数据
+		Participator user = new Participator();
+		List<Participator> users = participatorRepo.queryForList(user);
+		assertFalse(users.isEmpty());
 	}
 	
 	/**
