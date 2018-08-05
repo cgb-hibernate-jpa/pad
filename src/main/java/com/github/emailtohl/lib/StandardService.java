@@ -30,15 +30,13 @@ import com.github.emailtohl.lib.jpa.Paging;
  *            实体的类型
  * @param <ID>
  *            实体ID的类型
- * @param <USERID>
- *            实体ID的类型
  */
-public abstract class StandardService<E, ID, USERID extends Serializable> {
+public abstract class StandardService<E, ID extends Serializable> {
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
-	 * 存储着当前用户id信息
+	 * 存储着当前唯一识别用户的名字
 	 */
-	private static final ThreadLocal<Object> USER_ID = new ThreadLocal<>();
+	private static final ThreadLocal<String> USERNAME = new ThreadLocal<>();
 	/**
 	 * 手动校验
 	 */
@@ -154,19 +152,18 @@ public abstract class StandardService<E, ID, USERID extends Serializable> {
 	}
 	
 	/**
-	 * @return 获取当前用户的ID
+	 * @return 获取当前唯一识别用户的名字
 	 */
-	@SuppressWarnings("unchecked")
-	public USERID getUserId() {
-		return (USERID) USER_ID.get();
+	public static String getUsername() {
+		return USERNAME.get();
 	}
 	
 	/**
-	 * 设置当前用户的ID
-	 * @param userId 用户的ID
+	 * 设置当前唯一识别用户的名字
+	 * @param username 唯一识别用户的名字
 	 */
-	public void setUserId(USERID userId) {
-		USER_ID.set(userId);
+	public static void setUsername(String username) {
+		USERNAME.set(username);
 	}
 
 }

@@ -48,14 +48,14 @@ public class StandardServiceTest extends TestEnvironment {
 	
 	@Test
 	public void testUserId() {
-		itemTestService.setUserId(1L);
-		assertEquals(Long.valueOf(1L), itemTestService.getUserId());
+		ItemTestService.setUsername("foo");
+		assertEquals("foo", ItemTestService.getUsername());
 	}
 
 }
 
 @Service
-class ItemTestService extends StandardService<Item, Long, Long> {
+class ItemTestService extends StandardService<Item, Long> {
 
 	@Override
 	public Item create(@Valid Item entity) {
