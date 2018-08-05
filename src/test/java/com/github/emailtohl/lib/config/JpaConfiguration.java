@@ -90,7 +90,7 @@ class JpaConfiguration {
 			String indexBase = env.getProperty("", "lucene_index");
 			properties.put("hibernate.search.default.indexBase", indexBase);
 			LOG.debug("hibernate.search.default.indexBase={}", indexBase);
-		} else if ("ram".equalsIgnoreCase(searchDirectoryProvider)) {
+		} else if ("local-heap".equalsIgnoreCase(searchDirectoryProvider) || "ram".equalsIgnoreCase(searchDirectoryProvider)) {
 			properties.put("hibernate.search.default.directory_provider", searchDirectoryProvider);
 		}
 		emfb.setJpaPropertyMap(properties);

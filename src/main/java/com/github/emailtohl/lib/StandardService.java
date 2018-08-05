@@ -14,7 +14,6 @@ import javax.validation.ValidatorFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Pageable;
-import org.springframework.lang.Nullable;
 
 import com.github.emailtohl.lib.exception.NotAcceptableException;
 import com.github.emailtohl.lib.jpa.Paging;
@@ -23,31 +22,41 @@ import com.github.emailtohl.lib.jpa.Paging;
  * 抽象的服务，主要就是增删改查功能。
  * 
  * 标准化参数名、参数类型以及返回后，不仅利于维护，更利于在切面层进行扩展。
+ * 校验依赖javax.el-api、el-impl、hibernate-validator
  * 
  * @author HeLei
  *
- * @param <E> 实体的类型
- * @param <ID> 实体ID的类型
- * @param <USERID> 非幂等操作时，操作者ID类型
+ * @param <E>
+ *            实体的类型
+ * @param <ID>
+ *            实体ID的类型
+ * @param <USERID>
+ *            实体ID的类型
  */
 public abstract class StandardService<E, ID, USERID extends Serializable> {
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
+	 * 存储着当前用户id信息
+	 */
+	private static final ThreadLocal<Object> USER_ID = new ThreadLocal<>();
+	/**
 	 * 手动校验
 	 */
-	protected static final ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
-	protected Validator validator = FACTORY.getValidator();
+	protected static final Validator VALIDATOR;
+	
+	static {
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		VALIDATOR = factory.getValidator();
+	}
 
 	/**
 	 * 创建一个实体
 	 * 
 	 * @param entity
 	 *            实体对象
-	 * @param userId
-	 *            修改人，在一些业务中需要
 	 * @return 保存好ID的实体对象
 	 */
-	public abstract E create(E entity, @Nullable USERID userId);
+	public abstract E create(@Valid E entity);
 
 	/**
 	 * 根据ID获取实体
@@ -89,21 +98,17 @@ public abstract class StandardService<E, ID, USERID extends Serializable> {
 	 *            实体ID
 	 * @param newEntity
 	 *            修改的实体对象
-	 * @param userId
-	 *            修改人，在一些业务中需要
 	 * @return 返回null表示没找到该实体
 	 */
-	public abstract E update(ID id, E newEntity, @Nullable USERID userId);
+	public abstract E update(ID id, @Valid E newEntity);
 
 	/**
 	 * 根据ID删除实体
 	 * 
 	 * @param id
 	 *            实体的id
-	 * @param userId
-	 *            修改人，在一些业务中需要
 	 */
-	public abstract void delete(ID id, @Nullable USERID userId);
+	public abstract void delete(ID id);
 
 	/**
 	 * 屏蔽实体中的敏感信息，如密码；将持久化状态的实体转存到瞬时态的实体对象上以便于调用者序列化 本方法提取简略信息，不做关联查询，主要用于列表中
@@ -121,7 +126,7 @@ public abstract class StandardService<E, ID, USERID extends Serializable> {
 	 *            持久化状态的实体对象
 	 * @return 瞬时态的实体对象
 	 */
-	protected abstract E transientDetail(@Valid E entity);
+	protected abstract E transientDetail(E entity);
 
 	/**
 	 * 手动校验对象是否符合约束条件
@@ -130,7 +135,7 @@ public abstract class StandardService<E, ID, USERID extends Serializable> {
 	 *            被校验的实体对象
 	 */
 	public void validate(E entity) {
-		Set<ConstraintViolation<E>> violations = validator.validate(entity);
+		Set<ConstraintViolation<E>> violations = VALIDATOR.validate(entity);
 		if (violations.size() > 0) {
 			violations.forEach(v -> LOG.debug(v));
 			throw new NotAcceptableException(new ConstraintViolationException(violations));
@@ -146,6 +151,22 @@ public abstract class StandardService<E, ID, USERID extends Serializable> {
 	 */
 	public boolean hasText(String text) {
 		return text != null && !text.isEmpty();
+	}
+	
+	/**
+	 * @return 获取当前用户的ID
+	 */
+	@SuppressWarnings("unchecked")
+	public USERID getUserId() {
+		return (USERID) USER_ID.get();
+	}
+	
+	/**
+	 * 设置当前用户的ID
+	 * @param userId 用户的ID
+	 */
+	public void setUserId(USERID userId) {
+		USER_ID.set(userId);
 	}
 
 }
