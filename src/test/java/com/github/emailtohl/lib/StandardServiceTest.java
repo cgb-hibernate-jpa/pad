@@ -1,6 +1,5 @@
 package com.github.emailtohl.lib;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -46,12 +45,6 @@ public class StandardServiceTest extends TestEnvironment {
 		assertTrue(itemTestService.hasText("abc"));
 	}
 	
-	@Test
-	public void testUserId() {
-		ItemTestService.setUsername("foo");
-		assertEquals("foo", ItemTestService.getUsername());
-	}
-
 }
 
 @Service

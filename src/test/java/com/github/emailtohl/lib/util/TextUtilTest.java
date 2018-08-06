@@ -31,7 +31,7 @@ public class TextUtilTest {
 //		encoding = "UTF-16";
 //		encoding = "ISO8859-1";
 //		encoding = "GB18030";
-		System.out.println("实际编码是: " + encoding);
+		logger.debug("The actual code is: {}", encoding);
 		in = new ByteArrayInputStream(content.getBytes(encoding));
 	}
 
@@ -43,13 +43,13 @@ public class TextUtilTest {
 	@Test
 	public void testDetect() throws IOException {
 		String encoding = TextUtil.detect(in);
-		logger.debug("返回的编码是: " + encoding);
+		logger.debug("The return charset is {}", encoding);
 	}
 
 	@Test
 	public void testReadFileToString() throws IOException {
 		String txt = TextUtil.readFileToString(in);
-		logger.debug("TextUtil: " + txt);
+		logger.debug("TextUtil: {} ", txt);
 	}
 
 }

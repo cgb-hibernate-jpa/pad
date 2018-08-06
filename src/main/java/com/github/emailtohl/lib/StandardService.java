@@ -14,6 +14,9 @@ import javax.validation.ValidatorFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import com.github.emailtohl.lib.exception.NotAcceptableException;
 import com.github.emailtohl.lib.jpa.Paging;
@@ -31,12 +34,18 @@ import com.github.emailtohl.lib.jpa.Paging;
  * @param <ID>
  *            实体ID的类型
  */
+@Service
+@Validated
+@Transactional
 public abstract class StandardService<E, ID extends Serializable> {
-	protected static final Logger LOG = LogManager.getLogger();
 	/**
 	 * 存储着当前唯一识别用户的名字
 	 */
-	private static final ThreadLocal<String> USERNAME = new ThreadLocal<>();
+	public static final ThreadLocal<String> USERNAME = new ThreadLocal<>();
+	/**
+	 * 日志
+	 */
+	protected static final Logger LOG = LogManager.getLogger();
 	/**
 	 * 手动校验
 	 */
@@ -151,19 +160,4 @@ public abstract class StandardService<E, ID extends Serializable> {
 		return text != null && !text.isEmpty();
 	}
 	
-	/**
-	 * @return 获取当前唯一识别用户的名字
-	 */
-	public static String getUsername() {
-		return USERNAME.get();
-	}
-	
-	/**
-	 * 设置当前唯一识别用户的名字
-	 * @param username 唯一识别用户的名字
-	 */
-	public static void setUsername(String username) {
-		USERNAME.set(username);
-	}
-
 }
