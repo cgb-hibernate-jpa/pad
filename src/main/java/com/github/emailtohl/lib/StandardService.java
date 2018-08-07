@@ -6,7 +6,6 @@ import java.util.Set;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import javax.validation.Valid;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
@@ -14,9 +13,6 @@ import javax.validation.ValidatorFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 
 import com.github.emailtohl.lib.exception.NotAcceptableException;
 import com.github.emailtohl.lib.jpa.Paging;
@@ -34,9 +30,6 @@ import com.github.emailtohl.lib.jpa.Paging;
  * @param <ID>
  *            实体ID的类型
  */
-@Service
-@Validated
-@Transactional
 public abstract class StandardService<E, ID extends Serializable> {
 	/**
 	 * 存储着当前唯一识别用户的名字
@@ -63,7 +56,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 	 *            实体对象
 	 * @return 保存好ID的实体对象
 	 */
-	public abstract E create(@Valid E entity);
+	public abstract E create(E entity);
 
 	/**
 	 * 根据ID获取实体
@@ -107,7 +100,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 	 *            修改的实体对象
 	 * @return 返回null表示没找到该实体
 	 */
-	public abstract E update(ID id, @Valid E newEntity);
+	public abstract E update(ID id, E newEntity);
 
 	/**
 	 * 根据ID删除实体
