@@ -32,9 +32,9 @@ import com.github.emailtohl.lib.jpa.Paging;
  */
 public abstract class StandardService<E, ID extends Serializable> {
 	/**
-	 * 存储着当前唯一识别用户的名字
+	 * 以字符串方式存储着当前唯一识别用户的ID
 	 */
-	public static final ThreadLocal<String> USERNAME = new ThreadLocal<>();
+	public static final ThreadLocal<String> USER_ID = new ThreadLocal<String>();
 	/**
 	 * 日志
 	 */
