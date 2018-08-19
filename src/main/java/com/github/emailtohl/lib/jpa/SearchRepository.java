@@ -130,6 +130,7 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 		try {
 			ftq = getLuceneQuery(query);
 		} catch (EmptyQueryException e) {
+			LOG.catching(e);
 			return new PageImpl<>(new ArrayList<>());
 		}
 		int total = ftq.getResultSize();

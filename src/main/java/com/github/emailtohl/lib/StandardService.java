@@ -32,17 +32,18 @@ import com.github.emailtohl.lib.jpa.Paging;
  */
 public abstract class StandardService<E, ID extends Serializable> {
 	/**
-	 * 以字符串方式存储着当前唯一识别用户的ID
+	 * 以字符串方式存储着当前唯一识别用户的信息，例如可以用“:”作为分隔符：
+	 * id:name:authorities
 	 */
-	public static final ThreadLocal<String> USER_ID = new ThreadLocal<String>();
-	/**
-	 * 日志
-	 */
-	protected static final Logger LOG = LogManager.getLogger();
+	public static final ThreadLocal<String> CURRENT_USER_INFO = new ThreadLocal<String>();
 	/**
 	 * 手动校验
 	 */
 	protected static final Validator VALIDATOR;
+	/**
+	 * 日志
+	 */
+	protected final Logger LOG = LogManager.getLogger(getClass());
 	
 	static {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
