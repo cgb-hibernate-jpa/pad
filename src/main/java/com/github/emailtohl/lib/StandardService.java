@@ -1,8 +1,15 @@
 package com.github.emailtohl.lib;
 
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -32,8 +39,7 @@ import com.github.emailtohl.lib.jpa.Paging;
  */
 public abstract class StandardService<E, ID extends Serializable> {
 	/**
-	 * 以字符串方式存储着当前唯一识别用户的信息，例如可以用“:”作为分隔符：
-	 * id:name:authorities
+	 * 以字符串方式存储着当前唯一识别用户的信息，例如可以用“:”作为分隔符： id:name:authorities
 	 */
 	public static final ThreadLocal<String> CURRENT_USER_INFO = new ThreadLocal<String>();
 	/**
@@ -44,7 +50,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 	 * 日志
 	 */
 	protected final Logger LOG = LogManager.getLogger(getClass());
-	
+
 	static {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		VALIDATOR = factory.getValidator();
@@ -153,5 +159,52 @@ public abstract class StandardService<E, ID extends Serializable> {
 	public boolean hasText(String text) {
 		return text != null && !text.isEmpty();
 	}
-	
+
+	/**
+	 * 对JavaBean的字符串属性进行裁剪，主要用于提交表单的情况
+	 * 
+	 * @param o
+	 *            传入参数对象
+	 */
+	public void trimStringProperty(Object o) {
+		if (o instanceof String) {
+			o = ((String) o).trim();
+		}
+		try {
+			for (PropertyDescriptor pd : Introspector.getBeanInfo(o.getClass(), Object.class)
+					.getPropertyDescriptors()) {
+				Method getter = pd.getReadMethod(), setter = pd.getWriteMethod();
+				if (getter == null || setter == null) {
+					continue;
+				}
+				Object value = getter.invoke(o, new Object[] {});
+				if (value == null) {
+					continue;
+				}
+				if (String.class.equals(pd.getPropertyType())) {
+					setter.invoke(o, ((String) value).trim());
+				} else if (Collection.class.isAssignableFrom(pd.getPropertyType())) {
+					@SuppressWarnings("unchecked")
+					Collection<Object> collection = (Collection<Object>) value;
+					if (collection.isEmpty()) {
+						continue;
+					}
+					if (collection.iterator().next() instanceof String) {
+						List<String> strings = collection.stream().map(oo -> ((String) oo).trim()).collect(Collectors.toList());
+						collection.clear();
+						collection.addAll(strings);
+					} else {
+						for (Object v : (Collection<?>) value) {
+							trimStringProperty(v);
+						}
+					}
+				} else {
+					trimStringProperty(value);
+				}
+			}
+		} catch (IntrospectionException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e1) {
+			LOG.catching(e1);
+		}
+	}
 }

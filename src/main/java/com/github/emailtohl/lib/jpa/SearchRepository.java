@@ -22,7 +22,7 @@ import org.springframework.data.domain.Pageable;
 import com.github.emailtohl.lib.exception.InnerDataStateException;
 
 /**
- * 搜索的公共类
+ * 搜索的公共类，只搜索字符串域的内容，若是数字、日期等值类型，需用@FieldBridge(impl = StringBridgeCustomization.class)注解
  * 
  * @author HeLei
  *
