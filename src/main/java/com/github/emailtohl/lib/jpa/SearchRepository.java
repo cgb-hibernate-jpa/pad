@@ -10,7 +10,7 @@ import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.exception.EmptyQueryException;
+import org.hibernate.search.exception.SearchException;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.FullTextQuery;
 import org.hibernate.search.jpa.Search;
@@ -126,18 +126,20 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 	 * @return 查询结果
 	 */
 	public Page<E> search(String query, Pageable pageable) {
-		FullTextQuery ftq;
-		try {
-			ftq = getLuceneQuery(query);
-		} catch (EmptyQueryException e) {
-			LOG.catching(e);
-			return new PageImpl<>(new ArrayList<>());
+		if (query == null || query.isEmpty()) {
+			return queryForPage(null, pageable);
 		}
-		int total = ftq.getResultSize();
-		ftq.setFirstResult((int) pageable.getOffset()).setMaxResults(pageable.getPageSize());
-		@SuppressWarnings("unchecked")
-		List<E> ls = ftq.getResultList();
-		return new PageImpl<>(ls, pageable, total);
+		try {
+			FullTextQuery ftq = getLuceneQuery(query);
+			int total = ftq.getResultSize();
+			ftq.setFirstResult((int) pageable.getOffset()).setMaxResults(pageable.getPageSize());
+			@SuppressWarnings("unchecked")
+			List<E> ls = ftq.getResultList();
+			return new PageImpl<E>(ls, pageable, total);
+		} catch (SearchException e) {
+			LOG.catching(e);
+			return new PageImpl<E>(new ArrayList<>());
+		}
 	}
 
 	/**
@@ -147,7 +149,15 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 	 */
 	@SuppressWarnings("unchecked")
 	public List<E> search(String query) {
-		return getLuceneQuery(query).getResultList();
+		if (query == null || query.isEmpty()) {
+			return queryForList(null);
+		}
+		try {
+			return getLuceneQuery(query).getResultList();
+		} catch (SearchException e) {
+			LOG.catching(e);
+			return new ArrayList<E>();
+		}
 	}
 
 }
