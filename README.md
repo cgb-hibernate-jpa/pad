@@ -76,14 +76,28 @@ public Paging<User> search(@RequestParam(required = false, defaultValue = "") St
 ```java
 Pageable pageable = PageRequest.of(0, 20);
 ```
-QueryRepository会分析参数，并将里面不为null的属性以AND的逻辑拼写成JPQL查询，例如在User实例里面的name="foo",gender=Gender.MALE，那么就会进行如下查询：
+QueryRepository会分析参数，并将里面不为null的属性以AND的逻辑拼写成JPQL查询，例如在User实例里面的name="FOO",gender=Gender.MALE，那么就会进行如下查询：
 ```sql
-SELECT u FROM User u WHERE u.name='foo' AND u.gender='MALE'
+SELECT u FROM User u WHERE LOWER(name) LIKE 'foo' AND u.gender='MALE'
 ```
-若作为参数的关联关系不为null，且属性有值，则会进行连接查询，ManyToOne，OneToOne，Embedded会使用内连接查询，ManyToMany，OneToMany，ElementCollection则会使用左连接查询。
+若参数的关联关系不为null，且属性有值，则会进行连接查询，ManyToOne，OneToOne，Embedded会使用内连接查询，以User.city.name='ChongQing'为例，QueryRepository会将其解析为：
+```sql
+SELECT u FROM User u WHERE LOWER(u.city.name) LIKE 'chongqing'
+```
+如果是ManyToMany，OneToMany，ElementCollection关系，则会使用左连接查询，以User.roles.name="ADMIN"为例，其中roles属性是集合Set<Role>，QueryRepository会将其解析为：
+```sql
+SELECT u FROM User u LEFT JOIN u.roles r ON LOWER(r.name) LIKE 'admin'
+```
 #### 2.3.2 微调查询
 ##### 2.3.2.1 关于基本类型
-从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.lib.jpa.InitialValueAsCondition注解。
+从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.lib.jpa.InitialValueAsCondition注解，如：
+```java
+@InitialValueAsCondition
+public int getAge() {
+	return age;
+}
+```
+
 ##### 2.3.2.2 关于字符串
 对于字符串的查询，默认使用LIKE，并忽略大小写，以属性name举例：
 ```java
@@ -95,16 +109,16 @@ public String getName() {
 ```sql
 LOWER(name) LIKE 'foo'
 ```
-若需模糊查询，则应该由业务代码自行在值上添加通配符：'FOO%'。若一定要对字符串用相等比较，可以在其属性上添加上com.github.emailtohl.lib.jpa.Instruction注解，如：
+若需模糊查询，则应该由业务代码自行在值上添加通配符：'FOO%'。若一定要对字符串用相等做比较，可以在其属性上添加上com.github.emailtohl.lib.jpa.Instruction注解进行特殊说明，如：
 ```java
 @Instruction(operator = Operator.EQ)
 public String getName() {
     return name;
 }
 ```
-这样会被转成条件表达式：
+QueryRepository就会解析成条件表达式：
 ```sql
-name = 'foo'
+name='foo'
 ```
 ##### 2.3.2.3 其他条件比较
 有的查询需要其他条件比较，如大于、小于、不为NULL等等，对于这些需求，就得在对应的属性上使用com.github.emailtohl.lib.jpa.Instruction注解，如：
@@ -120,8 +134,6 @@ price >= 100.00
 ```
 对于有的属性的查询，需要条件组合，以User中有生日属性为例：
 ```java
-@DateTimeFormat(pattern = "yyyy-MM-dd")
-@JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
 @Temporal(TemporalType.DATE)
 public Date getBirthday() {
   return birthday;
@@ -177,7 +189,15 @@ class UserRepoImpl extends SearchRepository<User, Long> {
 
 }
 ```
-然后使用其Page<E> search(String query, Pageable pageable)或List<E> search(String query)即可进行全文搜索。其中Pageable是Spring data JPA提供的查询类，可在控制层注入，前面已经有介绍。
+然后使用其
+```java
+Page<E> search(String query, Pageable pageable);
+```
+或
+```java
+List<E> search(String query);
+```
+即可进行全文搜索。其中Pageable是Spring data JPA提供的查询类，可在控制层注入，前面已经有介绍。
 
 > 需要注意的是，SearchRepository只提供字符串搜索功能，不支持数字、日期的大于、小于条件查询，对于Date、Number、Enumeration，在标注上@Field注解后，需要再添加上com.github.emailtohl.lib.jpa.StringBridgeCustomization注解，让该属性值作为字符串被索引查询。
 
@@ -265,8 +285,7 @@ StandardService#trimStringProperty(Object o)，能将参数的字符串属性（
 ### 3.6 当前用户信息
 在StandardService中有一个CURRENT_USER_INFO静态域，它是ThreadLocal<String>类型，业务代码中，若需要获取当前访问用户，可在此域中查找。当然，使用它的前提是在过滤器层统一为其注入当前用户信息，参考代码如下：
 ```java
-public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-    throws IOException, ServletException {
+public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
   String username = "anonymous";
   Authentication auth = SecurityContextHolder.getContext().getAuthentication();
   if (auth != null && StringUtils.hasText(auth.getName())) {
