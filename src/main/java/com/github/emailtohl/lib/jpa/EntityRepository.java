@@ -24,7 +24,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public abstract class EntityRepository<E, ID extends Serializable> implements EntityInterface<E, ID> {
-	protected static final Logger LOG = LogManager.getLogger();
+	protected final Logger LOG = LogManager.getLogger(getClass());
 	protected final Class<E> entityClass;
 	protected final Class<ID> idClass;
 	@PersistenceUnit

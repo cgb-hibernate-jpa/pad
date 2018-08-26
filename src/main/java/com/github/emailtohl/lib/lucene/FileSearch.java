@@ -61,13 +61,13 @@ import com.github.emailtohl.lib.util.TextUtil;
  * @author HeLei
  */
 public class FileSearch implements AutoCloseable {
-	private static final Logger logger = LogManager.getLogger();
 	public static final String FILE_NAME = "fileName";
 	public static final String FILE_TIME = "fileTime";
 	public static final String FILE_CONTENT = "fileContent";
 	public static final String FILE_PATH = "filePath";
 	public static final String FILE_SIZE = "fileSize";
 	public static final int TOP_HITS = 1000;
+	private final Logger LOG = LogManager.getLogger();
 	/** 是否索引过，如果已经索引了，则不能再设置分词器 */
 	private volatile boolean isIndexed = false;
 	/** 分词器 */
@@ -174,19 +174,19 @@ public class FileSearch implements AutoCloseable {
 			// Query q = new TermQuery(new Term(FILE_CONTENT, queryString));
 			Query query = queryParser.parse(queryString);
 			TopDocs docs = indexSearcher.search(query, TOP_HITS);
-			logger.debug(docs.totalHits);
+			LOG.debug(docs.totalHits);
 			for (ScoreDoc sd : docs.scoreDocs) {
-				logger.debug(sd.score);
+				LOG.debug(sd.score);
 				Document doc = indexSearcher.doc(sd.doc);
-				logger.debug(doc);
+				LOG.debug(doc);
 				list.add(doc);
 			}
 		} catch (IOException e) {
-			logger.error("打开索引库失败", e);
+			LOG.error("打开索引库失败", e);
 		} catch (ParseException e) {
-			logger.error("查询语句解析失败", e);
+			LOG.error("查询语句解析失败", e);
 		} catch (InterruptedException e) {
-			logger.catching(e);
+			LOG.catching(e);
 		} finally {
 			synchronized (this) {
 				queryCount--;
@@ -220,23 +220,23 @@ public class FileSearch implements AutoCloseable {
 			count = indexSearcher.count(query);
 			Sort sort = getSort(pageable);
 			TopDocs docs = indexSearcher.search(query, TOP_HITS, sort);
-			logger.debug(docs.totalHits);
+			LOG.debug(docs.totalHits);
 			int offset = (int) pageable.getOffset();
 			int end = offset + pageable.getPageSize();
 
 			for (int i = offset; i < end && i < count && i < TOP_HITS; i++) {
 				ScoreDoc sd = docs.scoreDocs[i];
-				logger.debug(sd.score);
+				LOG.debug(sd.score);
 				Document doc = indexSearcher.doc(sd.doc);
-				logger.debug(doc);
+				LOG.debug(doc);
 				list.add(doc);
 			}
 		} catch (IOException e) {
-			logger.error("打开索引库失败", e);
+			LOG.error("打开索引库失败", e);
 		} catch (ParseException e) {
-			logger.error("查询语句解析失败", e);
+			LOG.error("查询语句解析失败", e);
 		} catch (InterruptedException e) {
-			logger.catching(e);
+			LOG.catching(e);
 		} finally {
 			synchronized (this) {
 				queryCount--;
@@ -403,7 +403,7 @@ public class FileSearch implements AutoCloseable {
 					indexSearcher = new IndexSearcher(indexReader);
 				}
 			} catch (InterruptedException e) {
-				logger.catching(e);
+				LOG.catching(e);
 			} finally {
 				queryCount++;
 				notifyAll();

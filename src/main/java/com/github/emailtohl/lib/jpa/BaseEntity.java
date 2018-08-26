@@ -45,7 +45,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 public abstract class BaseEntity implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
 	protected static final Logger LOG = LogManager.getLogger();
-	protected static final ObjectMapper objectMapper = new ObjectMapper();
+	protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 	/**
 	 * "ID"属性名称
 	 */
@@ -198,7 +198,7 @@ public abstract class BaseEntity implements Serializable, Cloneable {
 	@Override
 	public String toString() {
 		try {
-			return objectMapper.writeValueAsString(this);
+			return OBJECT_MAPPER.writeValueAsString(this);
 		} catch (JsonProcessingException e) {
 			LOG.catching(e);
 			return String.format("{\"id\":%d}", id);
