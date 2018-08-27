@@ -1,11 +1,11 @@
-# 开发工具包
+# 开发工具库项目介绍
 
-根据以往项目经验，提取出最通用的库函数，并进行重构，特别是JPA的各类查询，可以将业务代码的查询编码简化到最小程度，如此可移植到各类项目上。
+根据我以往的项目经验，提取出最通用的库函数，特别是JPA的各类查询，使用本库，可以将业务代码的查询编码简化到最小程度，让业务代码更加简洁一致，本工具库可移植到各类项目上。
 
 * 运行环境要求JDK8及以上版本。
-* 以Spring为基础运行环境。
-* 为避免包冲突，本项目Maven依赖scope为provided，若出现ClassNotFoundException异常，则需要查看是否欠缺相关依赖，主要依赖有jdbc、Spring、Spring-data-jpa、Jackson、log4j2、Hibernate search、Hibernate envers等，具体可参考本项目pom.xml文件中的配置。
-* 注意选取Hibernate、Hibernate Search以及Lucene相互兼容的版本在Hibernate search官网上会说明依赖的版本。
+* 以Spring为基础运行环境，最好使用Spring boot，可以自动导入很多依赖包。
+* 本工具库为避免与业务项目发生依赖包的冲突，所以在Maven依赖配置上，scope大多是provided，使用时若出现ClassNotFoundException异常，则需要查看业务项目是否欠缺相关依赖，主要依赖有jdbc、Spring、Spring-data-jpa、Jackson、log4j2、Hibernate search、Hibernate envers等，具体可参考本项目pom.xml文件中的配置。
+* 注意选取Hibernate、Hibernate Search以及Lucene相互兼容的版本，在Hibernate search官网上会说明依赖的版本。
 
 ## 1. 引入依赖包
 将包引入到项目中，以Maven本地依赖为例：
@@ -20,13 +20,13 @@
 ```
 然后解决需要的底层依赖，以Spring boot项目为例，主要引入spring-boot-starter-data-jpa、hibernate-search-orm等。
 ## 2. JPA相关功能
-数据层的编写往往是业务代码的重头，使用本库提供的JPA相关功能能将业务代码降低到最精简程度。
+数据层的编写往往是业务代码的重头，使用本工具库提供的JPA相关功能能将业务代码降低到最精简程度。
 ### 2.1 编写实体类
-实体类可以继承com.github.emailtohl.lib.jpa.BaseEntity，可以有如下效果：
-1. 获得全局唯一性的id，并以id为主键的equals&hashcod方法
-2. 增删改时，com.github.emailtohl.lib.jpa.EntityListener会在Spring上下文中发布事件,只要Bean实现ApplicationListener<BaseEntity>即可
-3. 统一具有版本，乐观锁模式下，让并发修改更安全
-4. 序列化为json的toString方法
+业务代码中的实体类可以继承com.github.emailtohl.lib.jpa.BaseEntity，他们具有统一的效果：
+1. 获得全局唯一性的id，并以id为主键的equals&hashcode方法，用于鉴别实体的相等性
+2. 做增删改操作时，com.github.emailtohl.lib.jpa.EntityListener会在Spring上下文中发布事件,只要Bean实现ApplicationListener&lt;BaseEntity&gt;即可收到事件
+3. 实体具有版本管理功能，在乐观锁模式下，可让并发修改更为安全
+4. 覆盖toString方法，序列化为json
 ### 2.2 EntityRepository
 基础的JPA数据访问层，业务代码通过继承它来使用其功能：
 ```java
@@ -44,7 +44,7 @@ QueryRepository继承自EntityRepository，提供动态查询的能力，可以�
 class UserRepoImpl extends QueryRepository<User, Long> {
 }
 ```
-然后将其注入到业务中：
+然后将其注入到服务Bean中：
 ```java
 @Service
 @Transactional
@@ -76,6 +76,8 @@ public Paging<User> search(@RequestParam(required = false, defaultValue = "") St
 ```java
 Pageable pageable = PageRequest.of(0, 20);
 ```
+> Spring Data JPA默认起始页从0开始
+
 QueryRepository会分析参数，并将里面不为null的属性以AND的逻辑拼写成JPQL查询，例如在User实例里面的name="FOO",gender=Gender.MALE，那么就会进行如下查询：
 ```sql
 SELECT u FROM User u WHERE LOWER(name) LIKE 'foo' AND u.gender='MALE'
@@ -94,7 +96,7 @@ SELECT u FROM User u LEFT JOIN u.roles r ON LOWER(r.name) LIKE 'admin'
 ```java
 @InitialValueAsCondition
 public int getAge() {
-	return age;
+  return age;
 }
 ```
 
@@ -102,7 +104,7 @@ public int getAge() {
 对于字符串的查询，默认使用LIKE，并忽略大小写，以属性name举例：
 ```java
 public String getName() {
-    return name;
+  return name;
 }
 ```
 若该属性存储值为"FOO"，则会被转成条件表达式：
@@ -211,9 +213,16 @@ class UserRepoImpl extends AuditedRepository<User, Long> {
 ```
 使用方式如下：
 #### 2.5.1 查询历史版本列表
-使用AuditedRepository#getRevisions(ID id)接口查询某实体所有的历史版本信息。其中在Tuple<E>.DefaultRevisionEntity中获取到修订版本id。
+使用AuditedRepository#getRevisions(ID id)接口查询某实体所有的历史版本信息，例如：
+```java
+List<Tuple<User>> getRevisions(Long id);
+```
+其中在Tuple<E>.DefaultRevisionEntity.id即为修订版本id。
 #### 2.5.2 获取历史版本快照
-结合修订版id和实体id，可通过AuditedRepository#getEntityAtRevision(ID id, Number revision)接口获取该实体当初的快照。
+结合修订版id和实体id，可通过AuditedRepository#getEntityAtRevision(ID id, Number revision)接口获取该实体当初的快照，如：
+```java
+User getEntityAtRevision(Long id, Number revision);
+```
 
 > void rollback(ID id, Number revision) 接口是将该实体回滚到当初的快照上，但是不能用于继承在BaseEntity的实体上，这是因为BaseEntity实体中的createDates属性是不能修改的，所有无法还原。
 
@@ -275,7 +284,7 @@ abstract E toTransient(E entity);
 ```java
 abstract E transientDetail(E entity);
 ```
-两个抽象方法需要业务代码自行实现，这是考虑到读取出来的实体对象具有持久化状态，若除了事务层后再被调用懒加载的属性，则会引起LazyInitializationException，所以需要在返回前，将数据转存到瞬态对象上。其中toTransient主要用于列表，对转存的数据进行浅拷贝，而transientDetail主要用于详情，对转存的数据进行深拷贝，具体有多深，由业务代码自行确定。
+两个抽象方法需要业务代码自行实现，这是考虑到读取出来的实体对象具有持久化状态，若出了事务层后再被调用懒加载的属性，则会引起LazyInitializationException，所以需要在返回前，将数据转存到瞬态对象上。其中toTransient主要用于列表，对转存的数据进行浅拷贝，而transientDetail主要用于详情，对转存的数据进行深拷贝，具体需要拷贝什么内容，程度有多深，需由业务代码自行确定。
 ### 3.3 参数校验
 javax.validation.constraints中的校验可以在切面中完成，也可以在业务代码中进行，例如在create方法的入口处使用StandardService#validate(E entity)，若不满足条件的，则会抛出校验异常。
 ### 3.4 裁剪字符串前后空格
