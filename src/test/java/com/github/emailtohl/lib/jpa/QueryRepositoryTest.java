@@ -209,8 +209,9 @@ public class QueryRepositoryTest extends TestEnvironment {
 		q = b.createQuery(SpringSession.class);
 		r = q.from(SpringSession.class);
 		SessionForm form = new SessionForm();
-		// createTime属性被设置了@InitialValueAsCondition注解，即便是初始值0也会作为条件参数
+		// maxInactiveInterval属性被设置了@InitialValueAsCondition注解，即便是初始值0也会作为条件参数
 		// 所以这里就需要传入一个查询条件
+		form.setMaxInactiveInterval(springSession.getMaxInactiveInterval());
 		form.setCreationTime(springSession.getCreationTime());
 		predicates = springSessionRepo.getPredicates(form, r, b);
 		assertTrue(predicates.size() > 0);
@@ -221,6 +222,80 @@ public class QueryRepositoryTest extends TestEnvironment {
 		assertEquals(springSession, ls.get(0));
 		
 		em.remove(springSession);
+		em.close();
+	}
+	
+	@Test
+	public void testEmptyAndNull() {
+		class ItemForm extends Item {
+			private static final long serialVersionUID = 7909725823129616068L;
+			@Instruction(propertyName = "bids", operator = Operator.EMPTY)
+			public short empty;
+			@Instruction(propertyName = "bids", operator = Operator.NOT_EMPTY)
+			public short notEmpty;
+			@Instruction(propertyName = "seller", operator = Operator.NULL)
+			public short _null;
+			@Instruction(propertyName = "seller", operator = Operator.NOT_NULL)
+			public short notNull;
+		}
+		ItemForm form = new ItemForm();
+		form.setCreatedOn(null);
+		form.setApproved(false);
+		form.setAuctionType(null);
+		
+		EntityManager em = factory.createEntityManager();
+		em.getTransaction().begin();
+		CriteriaBuilder b = em.getCriteriaBuilder();
+		
+		form.empty = 1;
+		CriteriaQuery<Item> q = b.createQuery(Item.class);
+		Root<Item> r = q.from(Item.class);
+		Set<Predicate> predicates = itemRepo.getPredicates(form, r, b);
+		assertTrue(predicates.size() > 0);
+		Predicate[] restrictions = new Predicate[predicates.size()];
+		q = q.select(r).where(predicates.toArray(restrictions));
+		q.select(r).where(restrictions);
+		List<Item> ls = em.createQuery(q).getResultList();
+		assertTrue(ls.isEmpty());
+		
+		form.empty = 0;
+		form.notEmpty = 1;
+		q = b.createQuery(Item.class);
+		r = q.from(Item.class);
+		predicates = itemRepo.getPredicates(form, r, b);
+		assertTrue(predicates.size() > 0);
+		restrictions = new Predicate[predicates.size()];
+		q = q.select(r).where(predicates.toArray(restrictions));
+		q.select(r).where(restrictions);
+		ls = em.createQuery(q).getResultList();
+		assertFalse(ls.isEmpty());
+		
+		form.notEmpty = 0;
+		form.notNull = 1;
+		q = b.createQuery(Item.class);
+		r = q.from(Item.class);
+		predicates = itemRepo.getPredicates(form, r, b);
+		assertTrue(predicates.size() > 0);
+		restrictions = new Predicate[predicates.size()];
+		q = q.select(r).where(predicates.toArray(restrictions));
+		q.select(r).where(restrictions);
+		ls = em.createQuery(q).getResultList();
+		System.out.println(ls);
+		assertFalse(ls.isEmpty());
+		
+		form.notNull = 0;
+		form._null = 1;
+		q = b.createQuery(Item.class);
+		r = q.from(Item.class);
+		predicates = itemRepo.getPredicates(form, r, b);
+		assertTrue(predicates.size() > 0);
+		restrictions = new Predicate[predicates.size()];
+		q = q.select(r).where(predicates.toArray(restrictions));
+		q.select(r).where(restrictions);
+		ls = em.createQuery(q).getResultList();
+		assertTrue(ls.isEmpty());
+		
+		em.getTransaction().commit();
 		em.close();
 	}
 	

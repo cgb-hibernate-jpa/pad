@@ -10,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import com.github.emailtohl.lib.jpa.InitialValueAsCondition;
+
 @Entity
 @Table(name = "SPRING_SESSION")
 public class SpringSession {
@@ -55,6 +57,7 @@ public class SpringSession {
 		this.lastAccessTime = lastAccessTime;
 	}
 	
+	@InitialValueAsCondition
 	@Column(name = "MAX_INACTIVE_INTERVAL", nullable = true)
 	public int getMaxInactiveInterval() {
 		return maxInactiveInterval;

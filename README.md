@@ -84,13 +84,13 @@ SELECT u FROM User u WHERE LOWER(name) LIKE 'foo' AND u.gender='MALE'
 ```
 实体类里面还可能嵌入“实体类型”或集合，这就属于关联关系，若这类关联关系的值不为null，则会进行连接查询。
 
-对于ManyToOne，OneToOne，Embedded关系，以User.city.name='ChongQing'为例，QueryRepository会将其解析为普通内连接语句：
+对于ManyToOne，OneToOne，Embedded关系，以User.city.name='ChongQing'为例，QueryRepository会将其解析为内连接语句：
 ```sql
 SELECT u FROM User u WHERE LOWER(u.city.name) LIKE 'chongqing'
 ```
-对于ManyToMany，OneToMany，ElementCollection关系，以User.roles.name="ADMIN"为例，其中roles属性是集合Set<Role>，QueryRepository会将其解析为左连接语句：
+对于ManyToMany，OneToMany，ElementCollection关系，以User.roles.name="ADMIN"为例，其中roles属性的类型是集合Set&lt;Role&gt，QueryRepository会将其解析为左连接语句：
 ```sql
-SELECT u FROM User u LEFT LEFT JOIN u.roles r WHERE LOWER(r.name) LIKE 'admin'
+SELECT u FROM User u LEFT JOIN u.roles r WHERE LOWER(r.name) LIKE 'admin'
 ```
 若是ElementCollection关系，且集合中的值为“值类型”，以User.loginNames={'foo@localhost', '19922388888'}为例，QueryRepository会将其解析为：
 ```sql
@@ -190,6 +190,31 @@ name in ('foo', 'bar')
 public Set<String> inNames = new HashSet<>();
 ```
 在该属性中存储进"foo"、"bar"，就会被QueryRepository解析。
+
+最后，NULL、NOT NULL、EMPTY、NOT_EMPTY都是对属性进行判空，其中NULL和NOT NULL用于值类型和实体类型的属性，而EMPTY和NOT_EMPTY仅用于集合属性。
+例如Item有seller和bids属性，其中seller是实体类型，而bids则是集合类型，要对其进行判空查询，可以创建一个查询表单类：
+```java
+class ItemForm extends Item {
+	private static final long serialVersionUID = 7909725823129616068L;
+	@Instruction(propertyName = "bids", operator = Operator.EMPTY)
+	public Short empty;
+	@Instruction(propertyName = "bids", operator = Operator.NOT_EMPTY)
+	public Short notEmpty;
+	@Instruction(propertyName = "seller", operator = Operator.NULL)
+	public Short _null;
+	@Instruction(propertyName = "seller", operator = Operator.NOT_NULL)
+	public Short notNull;
+}
+```
+新增的属性并不会映射数据库字段，所以是什么类型不重要，重要的是Instruction注解，它指明了要对实体的哪些属性进行判空查询，以查询seller不为null且bids不为空的Item为例，可以这样做：
+```java
+ItemForm form = new ItemForm();
+form.notEmpty = 1;
+form.notNull = 1;
+List<Item> list = itemRepo.queryForList(form);
+```
+这里将ItemForm实例的notEmpty和notNull的值设置为不为null，QueryRepository就会对其进行解析。
+
 ### 2.4 SearchRepository
 SearchRepository继承自QueryRepository，提供了使用Hibernate Search的简便方法，它会分析实体类中注解了org.hibernate.search.annotations.Field或org.hibernate.search.annotations.IndexedEmbedded属性，并用作索引和搜索，使用方法很简单，首先让业务类继承它。
 ```java
