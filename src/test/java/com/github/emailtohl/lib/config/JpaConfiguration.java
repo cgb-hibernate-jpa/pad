@@ -39,7 +39,7 @@ class JpaConfiguration {
 	@Bean
 	public JpaVendorAdapter jpaVendorAdapter(Environment env) {
 		HibernateJpaVendorAdapter adapter = new HibernateJpaVendorAdapter();
-		String driverClassName = env.getProperty("jdbc.driverClassName", "org.h2.Driver");
+		String driverClassName = env.getProperty("spring.datasource.driverClassName", "org.h2.Driver");
 		switch (driverClassName) {
 		case "org.h2.Driver":
 			adapter.setDatabase(Database.H2);

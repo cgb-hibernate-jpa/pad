@@ -144,6 +144,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		class Closure {
 			private static final String IS_NULL = "IS NULL";
 			private static final String IS_NOT_NULL = "IS NOT NULL";
+			private static final String EMPTY = "IS EMPTY";
+			private static final String NOT_EMPTY = "IS NOT EMPTY";
 			private static final String MEMBER_OF = "MEMBER OF";
 			private final Set<Object> used = new HashSet<Object>();
 
@@ -172,42 +174,49 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							&& ignorePrimitive(prop.getType(), value)) {
 						continue;
 					}
-					if (availableObj(value) || prop.getAnnotation(EmbeddedId.class) != null) {
-						Path<?> path = prefix.get(prop.name);
-						if (value instanceof String && prop.getAnnotation(Id.class) == null) {
-							// 模糊查询的“%”由参数提供，这里不自动添加
-							String _value = ((String) value).trim().toLowerCase();
-							predicates.add(cb.like(cb.lower((Path<String>) path), _value));
-							log(parentPath, prop.name, "LIKE", _value);
-						} else {
-							predicates.add(cb.equal(path, value));
-							log(parentPath, prop.name, "=", value);
-						}
-					} else {
-						ManyToOne manyToOne = prop.getAnnotation(ManyToOne.class);
-						OneToOne oneToOne = prop.getAnnotation(OneToOne.class);
-						Embedded embedded = prop.getAnnotation(Embedded.class);
+					// 先区分是否集合属性
+					if (value instanceof Collection) {// 如果是集合类型
 						ElementCollection elementCollection = prop.getAnnotation(ElementCollection.class);
 						OneToMany oneToMany = prop.getAnnotation(OneToMany.class);
 						ManyToMany manyToMany = prop.getAnnotation(ManyToMany.class);
-						if (manyToOne != null || oneToOne != null || embedded != null) {
+						Collection<Object> values = (Collection<Object>) value;
+						// 对集合处理的JPQL样例：SELECT c FROM Category c WHERE :item MEMBER OF c.items
+						// items是Category的集合属性，查询Category时，谓词条件是：参数item是Category#items的一员，可用isMember: cb.isMember(v, path)
+						// 此处查询参数v只考虑值类型，如果v是实体类型的话，在查询前，还需先将其加载为持久化状态，不仅复杂而且影响性能
+						if (elementCollection != null && availableCollection(values)) {
+							Path<Collection<Object>> path = prefix.get(prop.name);
+							for (Object v : values) {
+								predicates.add(cb.isMember(v, path));
+								log(parentPath, prop.name, MEMBER_OF, v);
+							}
+						} else if (prefix == root// 下面考虑v是实体类型的情况，这里采用左外连接来查询，前提条件是Join只在root层有效，用==进行严格判断
+								&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
+							// 在对多的关系中，连接查询时有个细节，若使用默认的INNER JOIN，即便WHERE后没有谓词，在生成SQL时，也会使用ON连接，这会让结果过滤掉未关联的项
+							// 所以在这种对多的关系中，一定要用左连接：SELECT c FROM Category c LEFT JOIN c.items WHERE ……
+							Join<?, Collection> join = root.join(prop.name, JoinType.LEFT);
+							for (Object component : values) {
+								exec(component, join, prop.name);
+							}
+						}
+					} else {// 如果是值类型
+						if (availableObj(value) || prop.getAnnotation(EmbeddedId.class) != null) {
 							Path<?> path = prefix.get(prop.name);
-							exec(value, path, parentPath + '.' + prop.name);
-						} else if (value instanceof Collection) {
-							Collection<Object> values = (Collection<Object>) value;
-							if (elementCollection != null && availableCollection(values)) {
-								Path<Collection<Object>> path = prefix.get(prop.name);
-								for (Object v : values) {
-									predicates.add(cb.isMember(v, path));
-									log(parentPath, prop.name, MEMBER_OF, v);
-								}
-							} else if (prefix == root// Join只在root层有效，用==进行严格判断
-									&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
-								// 连接为LEFT JOIN，若使用默认的INNER JOIN则查询结果会受到右边连接表影响
-								Join<?, ?> join = root.join(prop.name, JoinType.LEFT);
-								for (Object component : values) {
-									exec(component, join, prop.name);
-								}
+							if (value instanceof String && prop.getAnnotation(Id.class) == null) {
+								// 模糊查询的“%”由参数提供，这里不自动添加
+								String _value = ((String) value).trim().toLowerCase();
+								predicates.add(cb.like(cb.lower((Path<String>) path), _value));
+								log(parentPath, prop.name, "LIKE", _value);
+							} else {
+								predicates.add(cb.equal(path, value));
+								log(parentPath, prop.name, "=", value);
+							}
+						} else {// 否则是实体类型
+							ManyToOne manyToOne = prop.getAnnotation(ManyToOne.class);
+							OneToOne oneToOne = prop.getAnnotation(OneToOne.class);
+							Embedded embedded = prop.getAnnotation(Embedded.class);
+							if (manyToOne != null || oneToOne != null || embedded != null) {
+								Path<?> path = prefix.get(prop.name);
+								exec(value, path, parentPath + '.' + prop.name);
 							}
 						}
 					}
@@ -286,6 +295,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case IN:
+						// 这里只考虑值类型，若是实体类型还需要先加载其持久态实例
 						if (availableCollection(value)) {
 							In<Object> in = cb.in(path);
 							Collection<?> values = toCollection(value);
@@ -295,6 +305,14 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							predicates.add(in);
 							log(parentPath, condition.propertyName, "IN", values);
 						}
+						break;
+					case EMPTY:
+						predicates.add(cb.isEmpty((Path<Collection<?>>) path));
+						log(parentPath, condition.propertyName, EMPTY, "");
+						break;
+					case NOT_EMPTY:
+						predicates.add(cb.isNotEmpty((Path<Collection<?>>) path));
+						log(parentPath, condition.propertyName, NOT_EMPTY, "");
 						break;
 					case NULL:
 						predicates.add(path.isNull());
@@ -328,7 +346,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 					trace.append(' ').append(operator).append(' ').append(parentPath).append('.').append(propertyName);
 				} else {
 					trace.append(parentPath).append('.').append(propertyName).append(' ').append(operator).append(' ');
-					if (o instanceof String && !(IS_NULL.equals(operator) || IS_NOT_NULL.equals(operator))) {
+					if (o instanceof String && !(IS_NULL.equals(operator) || IS_NOT_NULL.equals(operator)
+							|| EMPTY.equals(operator) || NOT_EMPTY.equals(operator))) {
 						trace.append('\'').append(o).append('\'');
 					} else {
 						trace.append(o);

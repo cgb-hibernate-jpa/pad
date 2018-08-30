@@ -78,18 +78,25 @@ Pageable pageable = PageRequest.of(0, 20);
 ```
 > Spring Data JPA默认起始页从0开始
 
-QueryRepository会分析参数，并将里面不为null的属性以AND的逻辑拼写成JPQL查询，例如在User实例里面的name="FOO",gender=Gender.MALE，那么就会进行如下查询：
+QueryRepository会分析参数，并将里面不为null的属性以AND的逻辑拼写成JPQL查询，例如在User实例里面的name="FOO",gender=Gender.MALE，这些属性属于“值类型”，他们会被解析成：
 ```sql
 SELECT u FROM User u WHERE LOWER(name) LIKE 'foo' AND u.gender='MALE'
 ```
-若参数的关联关系不为null，且属性有值，则会进行连接查询，ManyToOne，OneToOne，Embedded会使用内连接查询，以User.city.name='ChongQing'为例，QueryRepository会将其解析为：
+实体类里面还可能嵌入“实体类型”或集合，这就属于关联关系，若这类关联关系的值不为null，则会进行连接查询。
+
+对于ManyToOne，OneToOne，Embedded关系，以User.city.name='ChongQing'为例，QueryRepository会将其解析为普通内连接语句：
 ```sql
 SELECT u FROM User u WHERE LOWER(u.city.name) LIKE 'chongqing'
 ```
-如果是ManyToMany，OneToMany，ElementCollection关系，则会使用左连接查询，以User.roles.name="ADMIN"为例，其中roles属性是集合Set<Role>，QueryRepository会将其解析为：
+对于ManyToMany，OneToMany，ElementCollection关系，以User.roles.name="ADMIN"为例，其中roles属性是集合Set<Role>，QueryRepository会将其解析为左连接语句：
 ```sql
-SELECT u FROM User u LEFT JOIN u.roles r ON LOWER(r.name) LIKE 'admin'
+SELECT u FROM User u LEFT LEFT JOIN u.roles r WHERE LOWER(r.name) LIKE 'admin'
 ```
+若是ElementCollection关系，且集合中的值为“值类型”，以User.loginNames={'foo@localhost', '19922388888'}为例，QueryRepository会将其解析为：
+```sql
+SELECT u FROM User u WHERE 'foo@localhost' MEMBER OF u.loginNames AND '19922388888' MEMBER OF u.loginNames
+```
+
 #### 2.3.2 微调查询
 ##### 2.3.2.1 关于基本类型
 从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.lib.jpa.InitialValueAsCondition注解，如：

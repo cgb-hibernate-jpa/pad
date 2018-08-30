@@ -29,7 +29,7 @@ class DataSourceConfiguration {
 
 	@Bean
 	public DataSource dataSource(Environment env) {
-		String driverClassName = env.getProperty("spring.datasource.driver-class-name", "org.h2.Driver");
+		String driverClassName = env.getProperty("spring.datasource.driverClassName", "org.h2.Driver");
 		LOG.debug("driverClassName: {}", driverClassName);
 		if ("org.h2.Driver".equalsIgnoreCase(driverClassName)) {
 			return new EmbeddedDatabaseBuilder().setType(EmbeddedDatabaseType.H2)

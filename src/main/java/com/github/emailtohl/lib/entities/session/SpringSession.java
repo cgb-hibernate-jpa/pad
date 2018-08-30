@@ -10,8 +10,6 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import com.github.emailtohl.lib.jpa.InitialValueAsCondition;
-
 @Entity
 @Table(name = "SPRING_SESSION")
 public class SpringSession {
@@ -41,7 +39,6 @@ public class SpringSession {
 		this.sessionId = sessionId;
 	}
 	
-	@InitialValueAsCondition
 	@Column(name = "CREATION_TIME", nullable = true)
 	public long getCreationTime() {
 		return creationTime;
