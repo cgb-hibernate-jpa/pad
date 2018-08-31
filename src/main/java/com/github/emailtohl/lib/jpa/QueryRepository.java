@@ -180,8 +180,12 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						OneToMany oneToMany = prop.getAnnotation(OneToMany.class);
 						ManyToMany manyToMany = prop.getAnnotation(ManyToMany.class);
 						Collection<Object> values = (Collection<Object>) value;
+						if (values.isEmpty()) {
+							continue;
+						}
 						// 对集合处理的JPQL样例：SELECT c FROM Category c WHERE :item MEMBER OF c.items
-						// items是Category的集合属性，查询Category时，谓词条件是：参数item是Category#items的一员，可用isMember: cb.isMember(v, path)
+						// items是Category的集合属性，查询Category时，谓词条件是：参数item是Category#items的一员，可用isMember:
+						// cb.isMember(v, path)
 						// 此处查询参数v只考虑值类型，如果v是实体类型的话，在查询前，还需先将其加载为持久化状态，不仅复杂而且影响性能
 						if (elementCollection != null && availableCollection(values)) {
 							Path<Collection<Object>> path = prefix.get(prop.name);
@@ -191,7 +195,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							}
 						} else if (prefix == root// 下面考虑v是实体类型的情况，这里采用左外连接来查询，前提条件是Join只在root层有效，用==进行严格判断
 								&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
-							// 在对多的关系中，连接查询时有个细节，若使用默认的INNER JOIN，即便WHERE后没有谓词，在生成SQL时，也会使用ON连接，这会让结果过滤掉未关联的项
+							// 在对多的关系中，连接查询时有个细节，若使用默认的INNER
+							// JOIN，即便WHERE后没有谓词，在生成SQL时，也会使用ON连接，这会让结果过滤掉未关联的项
 							// 所以在这种对多的关系中，一定要用左连接：SELECT c FROM Category c LEFT JOIN c.items WHERE ……
 							Join<?, Collection> join = root.join(prop.name, JoinType.LEFT);
 							for (Object component : values) {
@@ -379,7 +384,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 			if (properties != null) {
 				return properties;
 			}
-			properties = entityInspector.getEntityProperty(clazz);
+			properties = EntityInspector.getEntityProperty(clazz);
 			PROP_CACHE.put(clazz, properties);
 		}
 		return properties;
@@ -402,7 +407,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 			if (conditions != null) {
 				return conditions;
 			}
-			conditions = entityInspector.getConditions(clazz);
+			conditions = EntityInspector.getConditions(clazz);
 			CONDITION_CACHE.put(clazz, conditions);
 		}
 		return conditions;

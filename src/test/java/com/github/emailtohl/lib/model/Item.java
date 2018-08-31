@@ -181,7 +181,7 @@ public class Item extends BaseEntity {
     }
 
     @IndexedEmbedded(depth = 1)
-    @JsonBackReference
+    @JsonBackReference("categories")
     @ManyToMany(mappedBy = "items")
     public Set<Category> getCategories() {
         return categories;
@@ -193,7 +193,7 @@ public class Item extends BaseEntity {
 
     @IndexedEmbedded(depth = 1)
     @ContainedIn
-    @JsonBackReference
+    @JsonBackReference("bids")
     @OneToMany(mappedBy = "item")
     public Set<Bid> getBids() {
         return bids;

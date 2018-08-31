@@ -37,7 +37,6 @@ import com.github.emailtohl.lib.model.Item;
 import com.github.emailtohl.lib.util.LocalDateUtil;
 
 public class EntityInspectorTest {
-	static EntityInspector entityInspector = new EntityInspector();
 
 	@Before
 	public void setUp() throws Exception {
@@ -60,8 +59,8 @@ public class EntityInspectorTest {
 		class Baz extends Foo {}
 		class Qux extends Bar {}
 		
-		assertTrue(entityInspector.isEntity(Baz.class));
-		assertTrue(entityInspector.isEntity(Qux.class));
+		assertTrue(EntityInspector.isEntity(Baz.class));
+		assertTrue(EntityInspector.isEntity(Qux.class));
 	}
 
 	@Test
@@ -94,7 +93,7 @@ public class EntityInspectorTest {
 		// 3.getter和setter均存在
 		for (PropertyDescriptor pd : Introspector.getBeanInfo(Hello.class, Hello.class.getSuperclass())
 				.getPropertyDescriptors()) {
-			Basic basic = entityInspector.getAnnotation(pd, Basic.class);
+			Basic basic = EntityInspector.getAnnotation(pd, Basic.class);
 			assertNotNull(basic);
 		}
 	}
@@ -104,7 +103,7 @@ public class EntityInspectorTest {
 		@Embeddable
 		class Qux {}
 		// 首先测试嵌入式类，此类没有标准@Access，也没有标准@Id，所以最后应该判断为默认的AccessType.PROPERTY
-		AccessType accessType = entityInspector.getAccessType(Qux.class);
+		AccessType accessType = EntityInspector.getAccessType(Qux.class);
 		assertEquals(AccessType.PROPERTY, accessType);
 		
 		// 然后测试根据标准了@Id来确定访问类型
@@ -113,7 +112,7 @@ public class EntityInspectorTest {
 			@Id
 			private int id;
 		}
-		accessType = entityInspector.getAccessType(Foo.class);
+		accessType = EntityInspector.getAccessType(Foo.class);
 		assertEquals(AccessType.FIELD, accessType);
 		
 		// 再测试返回PROPERTY的情况
@@ -129,7 +128,7 @@ public class EntityInspectorTest {
 				this.id = id;
 			}
 		}
-		accessType = entityInspector.getAccessType(Bar.class);
+		accessType = EntityInspector.getAccessType(Bar.class);
 		assertEquals(AccessType.PROPERTY, accessType);
 		
 		// 最后测试指明@Access的情况
@@ -139,7 +138,7 @@ public class EntityInspectorTest {
 			@Id
 			private int id;
 		}
-		accessType = entityInspector.getAccessType(Baz.class);
+		accessType = EntityInspector.getAccessType(Baz.class);
 		assertEquals(AccessType.FIELD, accessType);
 	}
 
@@ -180,7 +179,7 @@ public class EntityInspectorTest {
 			}
 		}
 		Qux qux = new Qux();
-		Set<Condition> conditions = entityInspector.getConditions(qux.getClass());
+		Set<Condition> conditions = EntityInspector.getConditions(qux.getClass());
 		for (Condition condition : conditions) {
 			// 不管是实体属性还是非实体属性均会扫描并分析
 			switch (condition.fromName()) {
@@ -225,14 +224,14 @@ public class EntityInspectorTest {
 			public int id;
 		}
 		class Qux extends Baz {} // 继承实体类的类
-		Class<?>[] bound = entityInspector.findEntityBound(Qux.class);
+		Class<?>[] bound = EntityInspector.findEntityBound(Qux.class);
 		assertEquals(Baz.class, bound[0]);
 		assertEquals(Foo.class, bound[1]);
 		
 		class Fooo {}
 		@Embeddable
 		class Barr extends Fooo {} // 可嵌入类
-		bound = entityInspector.findEntityBound(Barr.class);
+		bound = EntityInspector.findEntityBound(Barr.class);
 		assertEquals(Barr.class, bound[0]);
 		assertEquals(Fooo.class, bound[1]);
 	}
@@ -256,7 +255,7 @@ public class EntityInspectorTest {
 		class Qux extends Baz {
 			private static final long serialVersionUID = 8521158475639243659L;
 		} // 继承实体类的类
-		Set<EntityProperty> result = entityInspector.getEntityPropertyByField(Qux.class);
+		Set<EntityProperty> result = EntityInspector.getEntityPropertyByField(Qux.class);
 		// 预期：实体属性既有私有字段中被注解的id，也有公开子段的field，并且能获取到正确值
 		Qux obj = new Qux();
 		for (EntityProperty ep : result) {
@@ -309,7 +308,7 @@ public class EntityInspectorTest {
 			private static final long serialVersionUID = -8785102859340804808L;
 		} // 继承实体类的类
 		Qux obj = new Qux();
-		Set<EntityProperty> result = entityInspector.getEntityPropertyByJpaDefinition(Qux.class);
+		Set<EntityProperty> result = EntityInspector.getEntityPropertyByJpaDefinition(Qux.class);
 		// 预期：扩展类的属性覆盖被继承的类的属性，id和field的值都应该是"baz"
 		for (EntityProperty ep : result) {
 			if (ep.name.equals("id")) {
@@ -323,7 +322,7 @@ public class EntityInspectorTest {
 	@Test
 	public void testGetEntityProperty() {
 		Item item = new Item();
-		Set<EntityProperty> properties = entityInspector.getEntityProperty(item.getClass());
+		Set<EntityProperty> properties = EntityInspector.getEntityProperty(item.getClass());
 		for (EntityProperty prop : properties) {
 			if (prop.name.equals("auctionType")) {
 				assertEquals(AuctionType.HIGHEST_BID, prop.getValue(item));
@@ -347,7 +346,7 @@ public class EntityInspectorTest {
 			Set<Item> items = new HashSet<>();
 		}
 		ItemMeta itemMeta = new ItemMeta();
-		properties = entityInspector.getEntityProperty(itemMeta.getClass());
+		properties = EntityInspector.getEntityProperty(itemMeta.getClass());
 		for (EntityProperty prop : properties) {
 			if (prop.name.equals("items")) {
 				Class<?> categoriesType = prop.getType();

@@ -31,10 +31,6 @@ public abstract class EntityRepository<E, ID extends Serializable> implements En
 	protected EntityManagerFactory entityManagerFactory;
 	@PersistenceContext
 	protected EntityManager entityManager;
-	/**
-	 * 包共享
-	 */
-	EntityInspector entityInspector = new EntityInspector();
 
 	protected EntityRepository(Class<E> entityClass, Class<ID> idClass) {
 		this.entityClass = entityClass;

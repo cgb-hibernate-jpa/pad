@@ -41,8 +41,6 @@ class EntityProperty {
 	 */
 	private final Object[] args = new Object[] {};
 	
-	private final EntityInspector entityInspector = new EntityInspector();
-
 	/**
 	 * 构造器，getter与field参数不能全为null，在调用getValue方法时以getter优先
 	 * @param propertyDescriptor JavaBean的属性描述器
@@ -117,9 +115,9 @@ class EntityProperty {
 	 */
 	Class<?>[] getGenericClass() {
 		if (AccessType.PROPERTY == accessType) {
-			return entityInspector.getGenericClass(propertyDescriptor);
+			return EntityInspector.getGenericClass(propertyDescriptor);
 		} else {
-			return entityInspector.getGenericClass(field);
+			return EntityInspector.getGenericClass(field);
 		}
 	}
 	

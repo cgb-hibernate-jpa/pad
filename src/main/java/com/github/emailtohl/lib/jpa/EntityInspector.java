@@ -46,7 +46,7 @@ class EntityInspector {
 	 * 
 	 * @return 判断的结果
 	 */
-	boolean isEntity(Class<?> clazz) {
+	static boolean isEntity(Class<?> clazz) {
 		Class<?> clz = clazz;
 		while (clz != Object.class) {
 			Embeddable embeddableAnno = clz.getAnnotation(Embeddable.class);
@@ -66,7 +66,7 @@ class EntityInspector {
 	 * @param annotationClass
 	 * @return
 	 */
-	<A extends Annotation> A getAnnotation(PropertyDescriptor descriptor, Class<A> annotationClass) {
+	static <A extends Annotation> A getAnnotation(PropertyDescriptor descriptor, Class<A> annotationClass) {
 		Method read = descriptor.getReadMethod(), write = descriptor.getWriteMethod();
 		LOG.debug("read: {} write: {}", read, write);
 		A a = null;
@@ -86,7 +86,7 @@ class EntityInspector {
 	 *            注解了@Entity的类
 	 * @return 访问规则：FIELD还是PROPERTY
 	 */
-	AccessType getAccessType(Class<?> entityClass) {
+	static AccessType getAccessType(Class<?> entityClass) {
 		Access accessAnno = entityClass.getAnnotation(Access.class);
 		if (accessAnno != null) {
 			return accessAnno.value();
@@ -125,7 +125,7 @@ class EntityInspector {
 	 * 
 	 * @return 特殊属性的比较方式，key实体的属性名，value是操作符
 	 */
-	Set<Condition> getConditions(Class<?> clazz) {
+	static Set<Condition> getConditions(Class<?> clazz) {
 		Set<Condition> conditions = new HashSet<Condition>();
 		Class<?> clz = clazz;
 		while (clz != Object.class) {
@@ -175,7 +175,7 @@ class EntityInspector {
 	 *            需要分析的类
 	 * @return 一个entityClass，stopClass 2个元素的数组，在继承上为上闭下开，在baseclass上停止分析
 	 */
-	Class<?>[] findEntityBound(Class<?> clazz) {
+	static Class<?>[] findEntityBound(Class<?> clazz) {
 		Class<?> clz = clazz, entityClass = null, stopClass = null;
 		ArrayList<Class<?>> ls = new ArrayList<Class<?>>();
 		while (clz != Object.class) {
@@ -221,7 +221,7 @@ class EntityInspector {
 	 *            被分析的类
 	 * @return 属性集合
 	 */
-	<T> Set<EntityProperty> getEntityPropertyByField(Class<T> clazz) {
+	static <T> Set<EntityProperty> getEntityPropertyByField(Class<T> clazz) {
 		Class<?>[] bound = findEntityBound(clazz);
 		Class<?> entityClass = bound[0], stopClass = bound[1];
 		Set<EntityProperty> properties = new HashSet<EntityProperty>();
@@ -259,7 +259,7 @@ class EntityInspector {
 	 *            被分析的类
 	 * @return 属性集合
 	 */
-	<T> Set<EntityProperty> getEntityPropertyByJpaDefinition(Class<T> clazz) {
+	static <T> Set<EntityProperty> getEntityPropertyByJpaDefinition(Class<T> clazz) {
 		Class<?>[] bound = findEntityBound(clazz);
 		Class<?> entityClass = bound[0], stopClass = bound[1];
 		Set<EntityProperty> properties = new HashSet<EntityProperty>();
@@ -313,7 +313,7 @@ class EntityInspector {
 	 *            某类
 	 * @return 作为映射关系部分的属性
 	 */
-	<T> Set<EntityProperty> getEntityProperty(Class<T> clazz) {
+	static <T> Set<EntityProperty> getEntityProperty(Class<T> clazz) {
 		Set<EntityProperty> properties = new HashSet<EntityProperty>();
 		Class<?>[] bound = findEntityBound(clazz);
 		Class<?> entityClass = bound[0];
@@ -331,7 +331,7 @@ class EntityInspector {
 	 * @param p
 	 * @return
 	 */
-	Class<?>[] getGenericClass(PropertyDescriptor p) {
+	static Class<?>[] getGenericClass(PropertyDescriptor p) {
 		List<Class<?>> ls = new ArrayList<Class<?>>();
 		Method method = p.getReadMethod();
 		if (method == null) {
@@ -366,7 +366,7 @@ class EntityInspector {
 	 * @param f
 	 * @return
 	 */
-	Class<?>[] getGenericClass(Field f) {
+	static Class<?>[] getGenericClass(Field f) {
 		ElementCollection elementCollection = f.getAnnotation(ElementCollection.class);
 		OneToMany oneToMany = f.getAnnotation(OneToMany.class);
 		ManyToMany manyToMany = f.getAnnotation(ManyToMany.class);
@@ -391,7 +391,7 @@ class EntityInspector {
 		return ls.toArray(cs);
 	}
 
-	private Class<?> getTargetClass(ElementCollection elementCollection, OneToMany oneToMany, ManyToMany manyToMany) {
+	static private Class<?> getTargetClass(ElementCollection elementCollection, OneToMany oneToMany, ManyToMany manyToMany) {
 		if (elementCollection != null) {
 			return elementCollection.targetClass();
 		}
