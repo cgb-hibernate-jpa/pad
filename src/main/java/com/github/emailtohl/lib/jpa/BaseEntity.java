@@ -25,6 +25,8 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.emailtohl.lib.exception.InnerDataStateException;
 
 /**
@@ -42,6 +44,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 @MappedSuperclass
 public abstract class BaseEntity implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
+	private static final ObjectMapper om = new ObjectMapper();
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
 	 * "ID"属性名称
@@ -194,7 +197,11 @@ public abstract class BaseEntity implements Serializable, Cloneable {
 	
 	@Override
 	public String toString() {
-		return JsonBuilder.build(this);
+		try {
+            return om.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+        	return String.format("{\"id\":%d}", id);
+        }
 	}
 	
 	@Override

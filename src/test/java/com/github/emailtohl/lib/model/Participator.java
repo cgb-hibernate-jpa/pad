@@ -13,8 +13,10 @@ import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.emailtohl.lib.jpa.BaseEntity;
 
+@JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler", "fieldHandler" })
 @Audited
 @Indexed
 @Entity

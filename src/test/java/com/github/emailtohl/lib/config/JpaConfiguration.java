@@ -70,8 +70,8 @@ class JpaConfiguration {
 		// hibernate可以扫描类路径下有JPA注解的实体类，但是JPA规范并没有此功能，所以最好还是告诉它实际所在位置
 		emfb.setPackagesToScan("com.github.emailtohl.lib.entities", "com.github.emailtohl.lib.model");
 		String hibernate_hbm2ddl_auto = env.getProperty("spring.jpa.properties.hibernate.hbm2ddl.auto", "update");
-		String showSql = env.getProperty("spring.jpa.show-sql", "true");
-		String formatSql = env.getProperty("spring.jpa.format_sql", "true");
+		String showSql = env.getProperty("spring.jpa.show-sql", "false");
+		String formatSql = env.getProperty("spring.jpa.format-sql", "false");
 		String generateDddl = env.getProperty("spring.jpa.generate-ddl", "true");
 		// hibernate.search.default.directory_provider默认是filesystem
 		// 设置hibernate.search.default.indexBase可指定索引目录

@@ -9,6 +9,9 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Indexed;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @Indexed
 @Embeddable
 public class Image implements Serializable {

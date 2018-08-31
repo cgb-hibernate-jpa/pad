@@ -33,11 +33,13 @@ import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.emailtohl.lib.jpa.BaseEntity;
 import com.github.emailtohl.lib.jpa.Instruction;
 import com.github.emailtohl.lib.jpa.Operator;
 import com.github.emailtohl.lib.jpa.StringBridgeCustomization;
 
+@JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @NamedQueries({
     @NamedQuery(
         name = "findItemById",
