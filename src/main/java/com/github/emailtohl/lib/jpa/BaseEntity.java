@@ -25,6 +25,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.emailtohl.lib.exception.InnerDataStateException;
@@ -35,6 +38,10 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
  * 
  * @author HeLei
  */
+// 忽略JPA/Hibernate懒加载属性
+@JsonIgnoreProperties(ignoreUnknown = true, value = { "hibernateLazyInitializer", "handler", "fieldHandler" })
+// 再对象图中防止循环依赖
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "_id")
 @EntityListeners(EntityListener.class)
 /*
  * @MappedSuperclass 用在父类上面。

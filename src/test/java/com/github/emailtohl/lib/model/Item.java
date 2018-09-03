@@ -31,15 +31,15 @@ import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.FieldBridge;
 import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.github.emailtohl.lib.jpa.BaseEntity;
 import com.github.emailtohl.lib.jpa.Instruction;
 import com.github.emailtohl.lib.jpa.Operator;
 import com.github.emailtohl.lib.jpa.StringBridgeCustomization;
 
-@JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @NamedQueries({
     @NamedQuery(
         name = "findItemById",
@@ -128,6 +128,8 @@ public class Item extends BaseEntity {
         this.name = name;
     }
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     public Date getCreatedOn() {
         return createdOn;
     }
@@ -136,6 +138,8 @@ public class Item extends BaseEntity {
 		this.createdOn = createdOn;
 	}
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
 	public Date getAuctionEnd() {
         return auctionEnd;
     }
