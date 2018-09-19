@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.annotation.PreDestroy;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,12 +33,10 @@ import com.github.emailtohl.lib.util.TextUtil;
  */
 public class FileSearch implements AutoCloseable {
 	public static final String FILE_NAME = "fileName";
-	public static final String FILE_TIME = "fileTime";
 	public static final String FILE_CONTENT = "fileContent";
 	public static final String FILE_PATH = "filePath";
 	public static final String FILE_SIZE = "fileSize";
-	public static final int TOP_HITS = 1000;
-	private LuceneClient client;
+	private LuceneFacade facade;
 	
 	/** 文本文件过滤器 */
 	private FileFilter textFileFilter = new TextFilesFilter();
@@ -49,30 +49,27 @@ public class FileSearch implements AutoCloseable {
 	 * @throws IOException 
 	 */
 	public FileSearch(Directory indexBase) throws IOException {
-		client = new LuceneClient(indexBase);
+		facade = new LuceneFacade(indexBase);
 	}
 
 	/**
 	 * 只接受文件系统的索引目录
 	 * 
-	 * @param indexBaseFSDirectory
-	 *            文件系统的索引目录
-	 * @throws IOException
-	 *             来自底层的输入输出异常
+	 * @param indexBaseFSDirectory 文件系统的索引目录
+	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public FileSearch(String indexBaseFSDirectory) throws IOException {
-		client = new LuceneClient(indexBaseFSDirectory);
+		facade = new LuceneFacade(indexBaseFSDirectory);
 	}
 
 	/**
 	 * 为需要查询的目录创建索引
 	 * 
 	 * @param searchDir 需要查询的目录
-	 * @return 被索引的Document数
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public synchronized void index(File searchDir) throws IOException {
-		client.index(getDocuments(searchDir));
+		facade.index(getDocuments(searchDir));
 	}
 
 	/**
@@ -83,8 +80,6 @@ public class FileSearch implements AutoCloseable {
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	private Document getDocument(File file) throws IOException {
-		// String content = FileUtils.readFileToString(file,
-		// StandardCharsets.UTF_8);
 		FileInputStream fis = null;
 		String content = "";
 		try {
@@ -100,12 +95,6 @@ public class FileSearch implements AutoCloseable {
 		fName.setBoost(1.2F);
 		Field fContent = new TextField(FILE_CONTENT, content, Store.NO);
 		// StringField被索引不被分词，整个值被看作为一个单独的token而被索引
-		// 这里使用file.getCanonicalPath()，获取的是文件绝对路径，getCanonicalPath和getAbsolutePath的不同在于：
-		// File file = new File("..\\src\\test1.txt");
-		// System.out.println(file.getAbsolutePath());
-		// D:\workspace\test\..\src\test1.txt
-		// System.out.println(file.getCanonicalPath());
-		// D:\workspace\src\test1.txt
 		Field fPath = new StringField(FILE_PATH, file.getCanonicalPath(), Store.YES);
 		// 创建文档对象
 		Document doc = new Document();
@@ -136,22 +125,22 @@ public class FileSearch implements AutoCloseable {
 	/**
 	 * 查询出Lucene原始的Document对象
 	 * 
-	 * @param queryString 查询字符串
+	 * @param query 查询字符串
 	 * @return lucene文档列表
 	 */
-	public List<Document> query(String queryString) {
-		return client.search(queryString);
+	public List<Document> search(String query) {
+		return facade.search(query);
 	}
 
 	/**
 	 * 分页查询出Lucene原始的Document对象
 	 * 
-	 * @param queryString 查询语句
+	 * @param query 查询语句
 	 * @param pageable Spring-data的分页对象
 	 * @return Spring-data的页面对象
 	 */
-	public Page<Document> query(String queryString, Pageable pageable) {
-		LuceneClient.Fragment fragment = client.search(queryString, (int) pageable.getOffset(), pageable.getPageSize());
+	public Page<Document> search(String query, Pageable pageable) {
+		LuceneFacade.Fragment fragment = facade.search(query, (int) pageable.getOffset(), pageable.getPageSize());
 		return new PageImpl<Document>(fragment.documents, pageable, fragment.totalHits);
 	}
 
@@ -167,7 +156,7 @@ public class FileSearch implements AutoCloseable {
 			return "";
 		}
 		Document doc = getDocument(file);
-		return client.create(doc);
+		return facade.create(doc);
 	}
 
 	/**
@@ -181,12 +170,12 @@ public class FileSearch implements AutoCloseable {
 			return "";
 		}
 		Document document = getDocument(file);
-		List<Document> ls = client.search(file.getPath());
+		List<Document> ls = facade.search(file.getPath());
 		String id;
 		if (ls.isEmpty()) {
-			id = client.create(document);
+			id = facade.create(document);
 		} else {
-			id = client.update(ls.get(0).get(LuceneClient.ID_NAME), document);
+			id = facade.update(ls.get(0).get(LuceneFacade.ID_NAME), document);
 		}
 		return id;
 	}
@@ -194,16 +183,14 @@ public class FileSearch implements AutoCloseable {
 	/**
 	 * 删除文件的索引
 	 * 
-	 * @param file
-	 *            文件系统中的文档
-	 * @throws IOException
-	 *             来自底层的输入输出异常
+	 * @param file 文件系统中的文档
+	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public void deleteIndex(File file) throws IOException {
 		if (textFileFilter.accept(file)) {
-			List<Document> ls = client.search(file.getPath());
+			List<Document> ls = facade.search(file.getPath());
 			if (!ls.isEmpty()) {
-				client.delete(ls.get(0).get(LuceneClient.ID_NAME));
+				facade.delete(ls.get(0).get(LuceneFacade.ID_NAME));
 			}
 		}
 	}
@@ -211,21 +198,22 @@ public class FileSearch implements AutoCloseable {
 	/**
 	 * 将查询结果以文件的路径返回
 	 * 
-	 * @param queryString 查询关键字
+	 * @param query 查询关键字
 	 * @return 返回的路径是相对于index时的路径，若index时是绝对路径，则返回的也是绝对路径
 	 */
-	public Set<String> queryForFilePath(String queryString) {
+	public Set<String> searchForFilePath(String query) {
 		Set<String> paths = new TreeSet<String>();
-		List<Document> list = query(queryString);
+		List<Document> list = search(query);
 		for (Document doc : list) {
 			paths.add(doc.getField(FILE_PATH).stringValue());
 		}
 		return paths;
 	}
 
+	@PreDestroy
 	@Override
 	public void close() throws Exception {
-		client.close();
+		facade.close();
 	}
 
 	@Override

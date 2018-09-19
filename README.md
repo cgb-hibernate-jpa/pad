@@ -340,8 +340,11 @@ public void doFilter(ServletRequest request, ServletResponse response, FilterCha
   }
 }
 ```
-## 4 文件搜索
-com.github.emailtohl.lib.lucene.FileSearch具备文件内容的搜索功能，它使用org.mozilla.intl.chardet.nsDetector自动识别文件的编码格式，再利用Lucene对文件的内容进行搜索。
+## 4 Lucene搜索
+Lucene索引在变更后indexRreader不会读取最新变化，若关闭后重建则需保证indexRreader上没有正在执行的线程。
+所以com.github.emailtohl.lib.lucene.LuceneFacade在整合indexRreader和indexWriter时做了简单的封装，确保在没有搜索线程执行时关闭并重建indexRreader。
+
+com.github.emailtohl.lib.lucene.FileSearch则是LuceneFacade的应用，它具备文件内容的搜索功能，它使用org.mozilla.intl.chardet.nsDetector自动识别文件的编码格式，再利用Lucene对文件的内容进行搜索。
 
 首先，在构造时，需要传入Lucene的Directory作为索引的存储仓库，可以是基于内存的RAMDirectory，也可以是基于文件系统的FSDirectory。
 

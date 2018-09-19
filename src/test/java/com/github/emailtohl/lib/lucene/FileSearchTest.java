@@ -55,14 +55,14 @@ public class FileSearchTest {
 
 	@Test
 	public void test() throws IOException, InterruptedException {
-		Set<String> result = fs.queryForFilePath(SEARCH_QUERY);
+		Set<String> result = fs.searchForFilePath(SEARCH_QUERY);
 		result.forEach(s -> logger.debug(s));
 		assertFalse(result.isEmpty());
 
 		Order[] orders = { Order.desc(FileSearch.FILE_NAME), Order.desc(FileSearch.FILE_CONTENT) };
 		Sort sort = Sort.by(orders);
 		Pageable pageable = PageRequest.of(1, 5, sort);
-		Page<Document> page = fs.query(SEARCH_QUERY, pageable);
+		Page<Document> page = fs.search(SEARCH_QUERY, pageable);
 		logger.debug(page.getNumber());
 		logger.debug(page.getSize());
 		logger.debug(page.getTotalElements());
@@ -88,11 +88,11 @@ public class FileSearchTest {
 		}
 		for (int i = 0; i < count; i++) {
 			exec.submit(() -> {
-				fs.queryForFilePath(getClass().getSimpleName());
+				fs.searchForFilePath(getClass().getSimpleName());
 			});
 		}
 		latch.await();
-		result = fs.queryForFilePath(getClass().getSimpleName());
+		result = fs.searchForFilePath(getClass().getSimpleName());
 		logger.debug(result);
 		assertFalse(result.isEmpty());
 		fs.deleteIndex(tempFile);
