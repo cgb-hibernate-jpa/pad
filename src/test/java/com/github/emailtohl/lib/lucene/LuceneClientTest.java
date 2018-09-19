@@ -1,10 +1,10 @@
 package com.github.emailtohl.lib.lucene;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -124,23 +124,13 @@ public class LuceneClientTest {
 	}
 
 	@Test
-	public void testUpdateIndex() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testDeleteIndex() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testQueryString() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	public void testQueryStringPageable() {
-		fail("Not yet implemented");
+	public void testSearch() throws InterruptedException {
+		List<Document> ls = client.search("Apple");
+		assertFalse(ls.isEmpty());
+		
+		ls = client.search("Belkin", 0, 10);
+		assertFalse(ls.isEmpty());
+		countDownLatch.await();
 	}
 	
 	private List<Document> getDocuments() {
