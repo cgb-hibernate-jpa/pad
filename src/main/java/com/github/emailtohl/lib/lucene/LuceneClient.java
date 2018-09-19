@@ -1,15 +1,12 @@
 package com.github.emailtohl.lib.lucene;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,6 +15,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -29,144 +27,122 @@ import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.SortField.Type;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.BytesRef;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 
 /**
- * 对Lucene的IndexWriter和IndexReader进行简易的封装，自实现更新索引后新建IndexReader的功能。
- * 与数据库自动生成id一样，索引时，会自动添加id字段进Document中。
- * 注意：创建多个LuceneClient实例时需区分索引目录，以免引起并发冲突。
+ * <p>对Lucene的IndexWriter和IndexReader进行简易的封装</p>
+ * <p>主要是自实现IndexWriter和IndexReader的线程控制，确保索引更新后，IndexReader在没有运行时关闭并重建</p>
+ * <p>仿数据库的访问方式，会自动为Document添加上id和create_time</p>
+ * 
  * @author HeLei
  */
 public class LuceneClient implements AutoCloseable {
-	/** 唯一标识一个Document的属性名 */
-	public static final String ID_NAME = "_id";
+	/** 在IndexWriter中是不能获取到docId的（分段合并会发生变化），所以需要唯一标识一个Document的属性 */
+	public static final String ID_NAME = "UUID";
 	/** Document的属性名，创建时间 */
 	public static final String CREATE_TIME = "CREATE_TIME";
-	/** id生成器，能唯一标识一个Document */
-	private static final AtomicLong idCreator = new AtomicLong(1);
 	/** 日志 */
 	private final Logger LOG = LogManager.getLogger();
 	/** 记录文档有哪些属性，便于查询 */
 	private final Set<String> indexableFieldNames = new CopyOnWriteArraySet<String>();
 	/** 查询前TOP_HITS个文档 */
-	private final int TOP_HITS = 100;
-	/** 分词器 */
-	private Analyzer analyzer = new StandardAnalyzer();
-	/** 索引存储目录 */
-	private final Directory indexBase;
+	private final int TOP_HITS = 50;
 	/** 索引写入器 */
-	private IndexWriter indexWriter;
+	private final IndexWriter writer;
 	/** 索引读取器 */
-	private IndexReader indexReader;
+	private IndexReader reader;
 	/** 搜索器 */
-	private IndexSearcher indexSearcher;
-	/** 查询线程的计数器，没有查询时为0，这时候可以更新IndexReader */
+	private IndexSearcher searcher;
+	/** 查询线程的计数器，没有修改索引或没有执行查询时为0，修改索引会小于0，执行查询会大于0 */
 	private volatile int queryCount = 0;
-	/** 是否索引过，如果已经索引了，则不能再设置分词器 */
-	private volatile boolean isIndexed = false;
-
+	
 	/**
-	 * 若使用默认构造器，则索引基于内存
+	 * 构造LuceneClient
+	 * @param indexBase 指定索引存储地址
+	 * @param analyzer 指定索引和搜索使用的分词器
+	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneClient() {
-		this.indexBase = new RAMDirectory();
+	public LuceneClient(Directory indexBase, Analyzer analyzer) throws IOException {
+		IndexWriterConfig conf = new IndexWriterConfig(analyzer);
+		// 每一次访问，创建新的索引,第二次访问，删掉原来的创建新的索引
+		conf.setOpenMode(OpenMode.CREATE);
+		writer = new IndexWriter(indexBase, conf);
+		reader = DirectoryReader.open(writer);
+		searcher = new IndexSearcher(reader);
 	}
 
 	/**
-	 * 可接受文件系统的索引目录，也可以接受内存形式的索引目录
+	 * 指定索引目录，也可以接受内存形式的索引目录
 	 * 
 	 * @param indexBase 索引目录
+	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneClient(Directory indexBase) {
-		this.indexBase = indexBase;
+	public LuceneClient(Directory indexBase) throws IOException {
+		this(indexBase, new StandardAnalyzer());
 	}
-
+	
 	/**
 	 * 只接受文件系统的索引目录
 	 * 
-	 * @param indexBaseFSDirectory 文件系统的索引目录
+	 * @param path 文件系统的索引目录
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneClient(String indexBaseFSDirectory) throws IOException {
-		this.indexBase = FSDirectory.open(Paths.get(indexBaseFSDirectory));
+	public LuceneClient(String path) throws IOException {
+		this(FSDirectory.open(Paths.get(path)), new StandardAnalyzer());
+	}
+	
+	/**
+	 * 若使用默认构造器，则索引基于内存
+	 * @throws IOException 来自底层的输入输出异常
+	 */
+	public LuceneClient() throws IOException {
+		this(new RAMDirectory(), new StandardAnalyzer());
 	}
 
 	/**
-	 * 将文档添加进索引
+	 * 将多个Document添加进索引，indexWriter是线程安全的，修改索引不必加锁
 	 * 
 	 * @param documents 要添加进索引的文档，执行后，每个Document中会添加id属性
-	 * @return 被索引的文档数
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public int index(List<Document> documents) throws IOException {
-		synchronized (this) {
-			int numIndexed = 0;
-			try {
-				// queryCount == 0 表示既没查询，也没有索引在执行
-				// queryCount < 0 表示在索引执行中
-				// queryCount > 0 表示在有查询执行中
-				while (queryCount != 0)
-					wait();
-				queryCount--;
-				close();
-				IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
-				// 每一次都会进行创建新的索引,第二次删掉原来的创建新的索引
-				indexWriterConfig.setOpenMode(OpenMode.CREATE);
-				// 创建索引的indexWriter
-				indexWriter = new IndexWriter(indexBase, indexWriterConfig);
-				for (Document doc : documents) {
-					doc.add(new LongField(ID_NAME, idCreator.getAndIncrement(), Store.YES));
-					doc.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
-					for (IndexableField field : doc.getFields()) {
-						indexableFieldNames.add(field.name());
-					}
-					indexWriter.addDocument(doc);
-				}
-				indexWriter.commit();
-				numIndexed = indexWriter.numDocs();
-				isIndexed = true;
-				indexReader = DirectoryReader.open(indexWriter);
-				indexSearcher = new IndexSearcher(indexReader);
-			} catch (InterruptedException e) {
-				LOG.catching(e);
-			} finally {
-				queryCount++;
-				notifyAll();
+	public void index(List<Document> documents) throws IOException {
+		for (Document doc : documents) {
+			doc.add(new StringField(ID_NAME, UUID.randomUUID().toString(), Store.YES));
+			doc.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
+			for (IndexableField field : doc.getFields()) {
+				indexableFieldNames.add(field.name());
 			}
-			return numIndexed;
+			writer.addDocument(doc);
 		}
+		writer.commit();
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("numDocs: {}", writer.numDocs());
+		}
+		refreshIndexReader();
 	}
 
 	/**
-	 * 添加一个文档进索引
+	 * 添加一个文档进索引，indexWriter是线程安全的，修改索引不必加锁
 	 * @param document 新增的文档，执行后，document中会添加id属性
 	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public long create(Document document) throws IOException {
-		long id = idCreator.getAndIncrement();
-		document.add(new LongField(ID_NAME, id, Store.YES));
+	public String create(Document document) throws IOException {
+		String id = UUID.randomUUID().toString();
+		document.add(new StringField(ID_NAME, id, Store.YES));
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
 		}
-		indexWriter.addDocument(document);
-		indexWriter.commit();
+		writer.addDocument(document);
+		writer.commit();
 		refreshIndexReader();
-		isIndexed = true;
 		return id;
 	}
 	
@@ -175,31 +151,26 @@ public class LuceneClient implements AutoCloseable {
 	 * @param id ID_NAME Field中的值，能唯一标识这个文档
 	 * @return lucene中的文档，若未查找到，则返回null
 	 */
-	public Document read(long id) {
+	public Document read(String id) {
 		Document doc = null;
 		try {
+			// 若正在执行refreshIndexReader中，那么就在此处等待
+			// 同一时间也只能由一个查询线程修改queryCount
 			synchronized (this) {
-				// queryCount == 0 表示既没查询，也没有索引正在执行
-				// queryCount < 0 表示在索引执行中
-				// queryCount > 0 表示在有查询执行中
-				while (queryCount < 0)
-					wait();
 				queryCount++;
 			}
-			Query query = NumericRangeQuery.newLongRange(ID_NAME, id, id + 1, true, false);
-			TopDocs docs = indexSearcher.search(query, 1);
+			Query query = new TermQuery(new Term(ID_NAME, id));
+			TopDocs docs = searcher.search(query, 1);
 			if (docs.scoreDocs.length == 0) {
 				return null;
 			}
-			LOG.debug(docs.scoreDocs[0].score);
-			doc = indexSearcher.doc(docs.scoreDocs[0].doc);
+			doc = searcher.doc(docs.scoreDocs[0].doc);
 			LOG.debug(doc);
 		} catch (IOException e) {
 			LOG.error("Failed to open the index library", e);
-		} catch (InterruptedException e) {
-			LOG.catching(e);
 		} finally {
 			synchronized (this) {
+				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
 				queryCount--;
 				notifyAll();
 			}
@@ -208,135 +179,38 @@ public class LuceneClient implements AutoCloseable {
 	}
 
 	/**
-	 * 更新索引，现将原文档删除，然后再添加新文档
+	 * 更新索引，现将原文档删除，然后再添加新文档，indexWriter是线程安全的，修改索引不必加锁
 	 * 
 	 * @param id ID_NAME Field中的值，能唯一标识这个文档
 	 * @param document 更新的文档，执行后，document中会添加id属性
 	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public long update(long id, Document document) throws IOException {
-		long newId = idCreator.getAndIncrement();
-		document.add(new LongField(ID_NAME, newId, Store.YES));
+	public String update(String id, Document document) throws IOException {
+		String newId = UUID.randomUUID().toString();
+		document.add(new StringField(ID_NAME, newId, Store.YES));
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
 		}
-		indexWriter.updateDocument(new Term(ID_NAME, new BytesRef(getBytes(id))), document);
-		indexWriter.commit();
+		writer.updateDocument(new Term(ID_NAME, id), document);
+		writer.commit();
 		refreshIndexReader();
-		isIndexed = true;
 		return newId;
 	}
 
 	/**
-	 * 在索引中删除一个文档
+	 * 在索引中删除一个文档，indexWriter是线程安全的，修改索引不必加锁
 	 * 
 	 * @param id ID_NAME Field中的值，能唯一标识这个文档
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public void delete(long id) throws IOException {
-		Query query = NumericRangeQuery.newLongRange(ID_NAME, id, id + 1, true, false);
-		indexWriter.deleteDocuments(query);
-//		indexWriter.deleteDocuments(new Term(ID_NAME, new BytesRef(getBytes(id))));
-		indexWriter.commit();
+	public void delete(String id) throws IOException {
+		writer.deleteDocuments(new Term(ID_NAME, id));
+		writer.commit();
 		refreshIndexReader();
 	}
 	
-	/**
-	 * 查询出Lucene原始的Document对象
-	 * 
-	 * @param queryString 查询字符串
-	 * @return lucene的文档列表
-	 */
-	public List<Document> query(String queryString) {
-		List<Document> list = new ArrayList<Document>();
-		try {
-			synchronized (this) {
-				// queryCount == 0 表示既没查询，也没有索引正在执行
-				// queryCount < 0 表示在索引执行中
-				// queryCount > 0 表示在有查询执行中
-				while (queryCount < 0)
-					wait();
-				queryCount++;
-			}
-			String[] fields = new String[indexableFieldNames.size()];
-			QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields), analyzer);
-			Query query = queryParser.parse(queryString);
-			TopDocs docs = indexSearcher.search(query, TOP_HITS);
-			LOG.debug(docs.totalHits);
-			for (ScoreDoc sd : docs.scoreDocs) {
-				LOG.debug(sd.score);
-				Document doc = indexSearcher.doc(sd.doc);
-				LOG.debug(doc);
-				list.add(doc);
-			}
-		} catch (IOException e) {
-			LOG.error("Failed to open the index library", e);
-		} catch (ParseException e) {
-			LOG.error("Query statement parsing failed", e);
-		} catch (InterruptedException e) {
-			LOG.catching(e);
-		} finally {
-			synchronized (this) {
-				queryCount--;
-				notifyAll();
-			}
-		}
-		return list;
-	}
-
-	/**
-	 * 分页查询出Lucene原始的Document对象
-	 * 
-	 * @param queryString 查询语句
-	 * @param pageable Spring-data的分页对象
-	 * @return Spring-data的页面对象
-	 */
-	public Page<Document> query(String queryString, Pageable pageable) {
-		List<Document> list = new ArrayList<Document>();
-		int count = 0;
-		try {
-			synchronized (this) {
-				// queryCount == 0 表示既没查询，也没有索引在执行
-				// queryCount < 0 表示在索引执行中
-				// queryCount > 0 表示在有查询执行中
-				while (queryCount < 0)
-					wait();
-				queryCount++;
-			}
-			String[] fields = new String[indexableFieldNames.size()];
-			QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields), analyzer);
-			Query query = queryParser.parse(queryString);
-			count = indexSearcher.count(query);
-			Sort sort = getSort(pageable);
-			TopDocs docs = indexSearcher.search(query, TOP_HITS, sort);
-			LOG.debug(docs.totalHits);
-			int offset = (int) pageable.getOffset();
-			int end = offset + pageable.getPageSize();
-
-			for (int i = offset; i < end && i < count && i < TOP_HITS; i++) {
-				ScoreDoc sd = docs.scoreDocs[i];
-				LOG.debug(sd.score);
-				Document doc = indexSearcher.doc(sd.doc);
-				LOG.debug(doc);
-				list.add(doc);
-			}
-		} catch (IOException e) {
-			LOG.error("Failed to open the index library", e);
-		} catch (ParseException e) {
-			LOG.error("Query statement parsing failed", e);
-		} catch (InterruptedException e) {
-			LOG.catching(e);
-		} finally {
-			synchronized (this) {
-				queryCount--;
-				notifyAll();
-			}
-		}
-		return new PageImpl<Document>(list, pageable, count);
-	}
-
 	/**
 	 * 当索引变更时，为保持查询有效，需更新IndexReader
 	 * 
@@ -345,68 +219,123 @@ public class LuceneClient implements AutoCloseable {
 	private void refreshIndexReader() throws IOException {
 		synchronized (this) {
 			try {
-				// queryCount == 0 表示既没查询，也没有索引在执行
-				// queryCount < 0 表示在索引执行中
-				// queryCount > 0 表示在有查询执行中
-				while (queryCount != 0)
+				// 当有搜索还在进行时，需要等待
+				while (queryCount > 0)
 					wait();
-				queryCount--;
-				IndexReader newReader = DirectoryReader.openIfChanged((DirectoryReader) indexReader);
-				if (newReader != null && newReader != indexReader) {
-					indexReader.close();
-					indexReader = newReader;
-					indexSearcher = new IndexSearcher(indexReader);
+				
+				IndexReader newReader = DirectoryReader.openIfChanged((DirectoryReader) reader);
+				if (newReader != null && newReader != reader) {
+					reader.close();
+					reader = newReader;
+					searcher = new IndexSearcher(reader);
 				}
 			} catch (InterruptedException e) {
 				LOG.catching(e);
-			} finally {
+			}
+		}
+	}
+	
+	/**
+	 * 执行搜索
+	 * @param queryString 查询字符串
+	 * @return Lucene原始的顶级文档引用
+	 * @throws ParseException 参数解析成Query对象发生异常
+	 * @throws IOException 来自底层的输入输出异常
+	 */
+	private TopDocs searchTopDocs(String queryString) throws ParseException, IOException {
+		try {
+			// 若正在执行refreshIndexReader中，那么就在此处等待
+			// 同一时间也只能由一个查询线程修改queryCount
+			synchronized (this) {
 				queryCount++;
+			}
+			String[] fields = new String[indexableFieldNames.size()];
+			QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields),
+					writer.getAnalyzer());
+			Query query = queryParser.parse(queryString);
+			return searcher.search(query, TOP_HITS);
+		} finally {
+			synchronized (this) {
+				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
+				queryCount--;
 				notifyAll();
 			}
 		}
 	}
 	
-	private Sort getSort(Pageable pageable) {
-		Sort sort = new Sort();
-		List<SortField> ls = new ArrayList<SortField>();
-		org.springframework.data.domain.Sort s = pageable.getSort();
-		if (s != null) {
-			for (Iterator<org.springframework.data.domain.Sort.Order> i = s.iterator(); i.hasNext();) {
-				org.springframework.data.domain.Sort.Order o = i.next();
-				SortField sortField = new SortField(o.getProperty(), Type.SCORE);// 以相关度进行排序
-				ls.add(sortField);
+	/**
+	 * 查询出Lucene原始的Document对象
+	 * 
+	 * @param query 查询字符串
+	 * @return lucene的文档列表
+	 */
+	public List<Document> search(String query) {
+		List<Document> list = new ArrayList<Document>();
+		try {
+			TopDocs docs = searchTopDocs(query);
+			LOG.debug(docs.totalHits);
+			for (ScoreDoc sd : docs.scoreDocs) {
+				Document doc = searcher.doc(sd.doc);
+				LOG.debug(doc);
+				list.add(doc);
 			}
+		} catch (IOException e) {
+			LOG.error("Failed to open the index library", e);
+		} catch (ParseException e) {
+			LOG.error("Query statement parsing failed", e);
 		}
-		if (ls.size() > 0) {
-			SortField[] sortFields = new SortField[ls.size()];
-			sort.setSort(ls.toArray(sortFields));
-		}
-		return sort;
+		return list;
 	}
 
 	/**
-	 * 设置分词器，必须在索引前调用，一旦索引完成，就不能再设置了
+	 * 分页查询出Lucene原始的Document对象
 	 * 
-	 * @param analyzer 分词器
+	 * @param query 查询字符串
+	 * @param offset 起始序号
+	 * @param size 每页大小
+	 * @return lucene的文档列表
 	 */
-	public synchronized void setAnalyzer(Analyzer analyzer) {
-		if (isIndexed)
-			throw new IllegalStateException("Has been indexed, can no longer set analyzer!");
-		this.analyzer = analyzer;
+	public List<Document> search(String query, int offset, int size) {
+		List<Document> list = new ArrayList<Document>();
+		try {
+			TopDocs docs = searchTopDocs(query);
+			LOG.debug(docs.totalHits);
+			int end = offset + size;
+			for (int i = offset; i < end && i < docs.totalHits; i++) {
+				ScoreDoc sd = docs.scoreDocs[i];
+				Document doc = searcher.doc(sd.doc);
+				LOG.debug(doc);
+				list.add(doc);
+			}
+		} catch (IOException e) {
+			LOG.error("Failed to open the index library", e);
+		} catch (ParseException e) {
+			LOG.error("Query statement parsing failed", e);
+		}
+		return list;
 	}
-
+	
 	/**
 	 * 关闭所有资源
 	 * 
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	@Override
-	public void close() throws IOException  {
-		if (indexReader != null)
-			indexReader.close();
-		if (indexWriter != null && indexWriter.isOpen())
-			indexWriter.close();
-		isIndexed = false;
+	public void close() throws IOException {
+		// 当修改索引还在进行时，需要等待
+		synchronized (this) {
+			try {
+				// 当有搜索还在进行时，需要等待
+				while (queryCount > 0)
+					wait();
+
+				reader.close();
+				if (writer.isOpen())
+					writer.close();
+			} catch (InterruptedException e) {
+				LOG.catching(e);
+			}
+		}
 	}
 	
 	@Override
@@ -415,15 +344,4 @@ public class LuceneClient implements AutoCloseable {
 		close();
 	}
 	
-	/**
-	 * long值转成byte[]
-	 * @param value long型的值
-	 * @return byte数组
-	 */
-	public byte[] getBytes(long value) {  
-        ByteBuffer buffer = ByteBuffer.allocate(8);  
-        buffer.order(ByteOrder.BIG_ENDIAN);  
-        buffer.putLong(value);  
-        return buffer.array();  
-    }  
 }
