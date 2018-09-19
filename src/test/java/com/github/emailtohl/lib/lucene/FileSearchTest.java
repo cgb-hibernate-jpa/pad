@@ -44,8 +44,7 @@ public class FileSearchTest {
 		// 创建一个内存目录
 		directory = new RAMDirectory();
 		fs = new FileSearch(directory);
-		int numIndexed = fs.index(tempFile);
-		logger.debug(numIndexed);
+		fs.index(tempFile);
 	}
 
 	@After

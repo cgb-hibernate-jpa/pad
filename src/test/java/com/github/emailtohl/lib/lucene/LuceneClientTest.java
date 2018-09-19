@@ -128,8 +128,8 @@ public class LuceneClientTest {
 		List<Document> ls = client.search("Apple");
 		assertFalse(ls.isEmpty());
 		
-		ls = client.search("Belkin", 0, 10);
-		assertFalse(ls.isEmpty());
+		LuceneClient.Fragment fragment = client.search("Belkin", 0, 10);
+		assertFalse(fragment.documents.isEmpty());
 		countDownLatch.await();
 	}
 	

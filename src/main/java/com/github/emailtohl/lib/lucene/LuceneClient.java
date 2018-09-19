@@ -177,7 +177,7 @@ public class LuceneClient implements AutoCloseable {
 		}
 		return doc;
 	}
-
+	
 	/**
 	 * 更新索引，现将原文档删除，然后再添加新文档，indexWriter是线程安全的，修改索引不必加锁
 	 * 
@@ -286,33 +286,46 @@ public class LuceneClient implements AutoCloseable {
 		}
 		return list;
 	}
+	
+	/**
+	 * 存储分段查询的数据结构
+	 * 
+	 * @author HeLei
+	 */
+	public static class Fragment {
+		public final List<Document> documents = new ArrayList<Document>();
+		public int totalHits;
+		public float maxScore;
+	}
 
 	/**
-	 * 分页查询出Lucene原始的Document对象
+	 * 分段查询出Lucene原始的Document对象
 	 * 
 	 * @param query 查询字符串
 	 * @param offset 起始序号
 	 * @param size 每页大小
-	 * @return lucene的文档列表
+	 * @return 分段查询的结果
 	 */
-	public List<Document> search(String query, int offset, int size) {
-		List<Document> list = new ArrayList<Document>();
+	public Fragment search(String query, int offset, int size) {
+		Fragment fragment = new Fragment();
 		try {
 			TopDocs docs = searchTopDocs(query);
 			LOG.debug(docs.totalHits);
+			fragment.totalHits = docs.totalHits;
+			fragment.maxScore = docs.getMaxScore();
 			int end = offset + size;
 			for (int i = offset; i < end && i < docs.totalHits; i++) {
 				ScoreDoc sd = docs.scoreDocs[i];
 				Document doc = searcher.doc(sd.doc);
 				LOG.debug(doc);
-				list.add(doc);
+				fragment.documents.add(doc);
 			}
 		} catch (IOException e) {
 			LOG.error("Failed to open the index library", e);
 		} catch (ParseException e) {
 			LOG.error("Query statement parsing failed", e);
 		}
-		return list;
+		return fragment;
 	}
 	
 	/**
