@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- http://logging.apache.org/log4j/2.x/manual/configuration.html -->
-<configuration status="INFO">
+<!-- shutdownHook="disable" This will tell Log4j2 that you're handling the shutdown of the Logger yourself.
+(Since in a normal application you don't have a web.xml file, you have to retrieve your configuration file in some other way). -->
+<configuration status="INFO" shutdownHook="disable">
 	<appenders>
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />

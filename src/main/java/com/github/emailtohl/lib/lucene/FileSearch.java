@@ -44,9 +44,8 @@ public class FileSearch implements AutoCloseable {
 	/**
 	 * 可接受文件系统的索引目录，也可以接受内存形式的索引目录
 	 * 
-	 * @param indexBase
-	 *            索引目录
-	 * @throws IOException 
+	 * @param indexBase 索引目录
+	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public FileSearch(Directory indexBase) throws IOException {
 		facade = new LuceneFacade(indexBase);
@@ -148,7 +147,7 @@ public class FileSearch implements AutoCloseable {
 	 * 添加文件的索引
 	 * 
 	 * @param file 文件系统中的文档
-	 * @return 创建文档的id
+	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public String addIndex(File file) throws IOException {
@@ -163,6 +162,7 @@ public class FileSearch implements AutoCloseable {
 	 * 更新文件的索引
 	 * 
 	 * @param file 文件系统中的文档
+	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public String updateIndex(File file) throws IOException {
