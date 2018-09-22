@@ -139,8 +139,8 @@ public class FileSearch implements AutoCloseable {
 	 * @return Spring-data的页面对象
 	 */
 	public Page<Document> search(String query, Pageable pageable) {
-		LuceneFacade.Fragment fragment = facade.search(query, (int) pageable.getOffset(), pageable.getPageSize());
-		return new PageImpl<Document>(fragment.documents, pageable, fragment.totalHits);
+		LuceneFacade.Page page = facade.search(query, (int) pageable.getOffset(), pageable.getPageSize());
+		return new PageImpl<Document>(page.documents, pageable, page.totalHits);
 	}
 
 	/**

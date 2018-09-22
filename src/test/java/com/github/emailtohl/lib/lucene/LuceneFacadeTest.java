@@ -128,8 +128,8 @@ public class LuceneFacadeTest {
 		List<Document> ls = facade.search("Apple");
 		assertFalse(ls.isEmpty());
 		
-		LuceneFacade.Fragment fragment = facade.search("Belkin", 0, 10);
-		assertFalse(fragment.documents.isEmpty());
+		LuceneFacade.Page page = facade.search("Belkin", 0, 10);
+		assertFalse(page.documents.isEmpty());
 		countDownLatch.await();
 	}
 	

@@ -26,6 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -51,8 +52,8 @@ public class LuceneFacade implements AutoCloseable {
 	private final Logger LOG = LogManager.getLogger();
 	/** 记录文档有哪些属性，便于查询 */
 	private final Set<String> indexableFieldNames = new CopyOnWriteArraySet<String>();
-	/** 查询前TOP_HITS个文档 */
-	private final int TOP_HITS = 50;
+	/** 默认查询前TOP_HITS个文档 */
+	private final int DEFAULT_TOP_HITS = 100;
 	/** 索引写入器 */
 	private final IndexWriter writer;
 	/** 索引读取器 */
@@ -236,24 +237,67 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
-	 * 执行搜索
-	 * @param queryString 查询字符串
-	 * @return Lucene原始的顶级文档引用
-	 * @throws ParseException 参数解析成Query对象发生异常
-	 * @throws IOException 来自底层的输入输出异常
+	 * hits for <code>query</code>.
+	 * Finds the top <code>n</code>
+	 * 代理原搜索器的搜索方法，对搜索的线程进行统计，以保证搜索器在执行时不被关闭
+	 * @param query 结构化的查询参数
+	 * @param n 符合条件的数量
+	 * @return 搜索结果的Lucene文档集合
+	 * @throws IOException BooleanQuery.TooManyClauses If a query would exceed 
+     *         {@link BooleanQuery#getMaxClauseCount()} clauses.
 	 */
-	private TopDocs searchTopDocs(String queryString) throws ParseException, IOException {
+	public List<Document> search(Query query, int n) throws IOException {
 		try {
 			// 若正在执行refreshIndexReader中，那么就在此处等待
 			// 同一时间也只能由一个查询线程修改queryCount
 			synchronized (this) {
 				queryCount++;
 			}
-			String[] fields = new String[indexableFieldNames.size()];
-			QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields),
-					writer.getAnalyzer());
-			Query query = queryParser.parse(queryString);
-			return searcher.search(query, TOP_HITS);
+			List<Document> documents = new ArrayList<Document>();
+			TopDocs topDocs = searcher.search(query, n);
+			for (ScoreDoc sd : topDocs.scoreDocs) {
+				Document doc = searcher.doc(sd.doc);
+				LOG.debug(doc);
+				documents.add(doc);
+			}
+			return documents;
+		} finally {
+			synchronized (this) {
+				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
+				queryCount--;
+				notifyAll();
+			}
+		}
+	}
+	
+	/**
+	 * 分页查询
+	 * 代理原搜索器的搜索方法，对搜索的线程进行统计，以保证搜索器在执行时不被关闭
+	 * @param query 结构化的查询参数
+	 * @param offset 数量
+	 * @return 分页后的Lucene文档搜索结果
+	 * @throws IOException BooleanQuery.TooManyClauses If a query would exceed 
+     *         {@link BooleanQuery#getMaxClauseCount()} clauses.
+	 */
+	public Page search(Query query, int offset, int size) throws IOException {
+		try {
+			// 若正在执行refreshIndexReader中，那么就在此处等待
+			// 同一时间也只能由一个查询线程修改queryCount
+			synchronized (this) {
+				queryCount++;
+			}
+			int end = offset + size;
+			Page page = new Page();
+			TopDocs topDocs = searcher.search(query, DEFAULT_TOP_HITS);
+			page.totalHits = topDocs.totalHits;
+			page.maxScore = topDocs.getMaxScore();
+			for (int i = offset; i < end && i < topDocs.totalHits; i++) {
+				ScoreDoc sd = topDocs.scoreDocs[i];
+				Document doc = searcher.doc(sd.doc);
+				LOG.debug(doc);
+				page.documents.add(doc);
+			}
+			return page;
 		} finally {
 			synchronized (this) {
 				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
@@ -265,26 +309,47 @@ public class LuceneFacade implements AutoCloseable {
 	
 	/**
 	 * 查询出Lucene原始的Document对象
-	 * 
-	 * @param query 查询字符串
+	 * @param queryString 查询字符串
 	 * @return lucene的文档列表
 	 */
-	public List<Document> search(String query) {
-		List<Document> list = new ArrayList<Document>();
+	public List<Document> search(String queryString) {
+		String[] fields = new String[indexableFieldNames.size()];
+		QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields),
+				writer.getAnalyzer());
 		try {
-			TopDocs docs = searchTopDocs(query);
-			LOG.debug(docs.totalHits);
-			for (ScoreDoc sd : docs.scoreDocs) {
-				Document doc = searcher.doc(sd.doc);
-				LOG.debug(doc);
-				list.add(doc);
-			}
+			Query query = queryParser.parse(queryString);
+			return search(query, DEFAULT_TOP_HITS);
 		} catch (IOException e) {
 			LOG.error("Failed to open the index library", e);
+			return new ArrayList<Document>();
 		} catch (ParseException e) {
 			LOG.error("Query statement parsing failed", e);
+			return new ArrayList<Document>();
 		}
-		return list;
+	}
+
+	/**
+	 * 分段查询出Lucene原始的Document对象
+	 * 
+	 * @param queryString 查询字符串
+	 * @param offset 起始序号
+	 * @param size 每页大小
+	 * @return 分段查询的结果
+	 */
+	public Page search(String queryString, int offset, int size) {
+		String[] fields = new String[indexableFieldNames.size()];
+		QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields),
+				writer.getAnalyzer());
+		try {
+			Query query = queryParser.parse(queryString);
+			return search(query, offset, size);
+		} catch (IOException e) {
+			LOG.error("Failed to open the index library", e);
+			return new Page();
+		} catch (ParseException e) {
+			LOG.error("Query statement parsing failed", e);
+			return new Page();
+		}
 	}
 	
 	/**
@@ -292,40 +357,10 @@ public class LuceneFacade implements AutoCloseable {
 	 * 
 	 * @author HeLei
 	 */
-	public static class Fragment {
+	public static class Page {
 		public final List<Document> documents = new ArrayList<Document>();
 		public int totalHits;
 		public float maxScore;
-	}
-
-	/**
-	 * 分段查询出Lucene原始的Document对象
-	 * 
-	 * @param query 查询字符串
-	 * @param offset 起始序号
-	 * @param size 每页大小
-	 * @return 分段查询的结果
-	 */
-	public Fragment search(String query, int offset, int size) {
-		Fragment fragment = new Fragment();
-		try {
-			TopDocs docs = searchTopDocs(query);
-			LOG.debug(docs.totalHits);
-			fragment.totalHits = docs.totalHits;
-			fragment.maxScore = docs.getMaxScore();
-			int end = offset + size;
-			for (int i = offset; i < end && i < docs.totalHits; i++) {
-				ScoreDoc sd = docs.scoreDocs[i];
-				Document doc = searcher.doc(sd.doc);
-				LOG.debug(doc);
-				fragment.documents.add(doc);
-			}
-		} catch (IOException e) {
-			LOG.error("Failed to open the index library", e);
-		} catch (ParseException e) {
-			LOG.error("Query statement parsing failed", e);
-		}
-		return fragment;
 	}
 	
 	/**
