@@ -17,10 +17,13 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.github.emailtohl.lib.lucene.LuceneFacade.Result;
 
 public class LuceneFacadeTest {
 	private String field_name = "compName_s";
@@ -87,14 +90,14 @@ public class LuceneFacadeTest {
 	@Test
 	public void testCRUD() throws IOException, InterruptedException {
 		Document doc = new Document();
-		doc.add(new TextField("number", "F8V7067-APL-KIT", Store.YES));
+		doc.add(new StringField("number", "F8V7067-APL-KIT", Store.YES));
 		doc.add(new TextField("name", "Belkin Mobile Power Cord for iPod w/ Dock", Store.NO));
 		doc.add(new TextField("manu", "Belkin", Store.NO));
 		String id = facade.create(doc);
 		
 		// 再添加一个文档，使其增加id
 		doc = new Document();
-		doc.add(new TextField("isbn", "978-1423103349", Store.YES));
+		doc.add(new StringField("isbn", "978-1423103349", Store.YES));
 		doc.add(new TextField("name", "Percy Jackson and the Olympians", Store.NO));
 		doc.add(new TextField("author", "Rick Riordan", Store.NO));
 		doc.add(new DoubleField("price", 6.49, Store.NO));
@@ -104,8 +107,12 @@ public class LuceneFacadeTest {
 		assertNotNull(doc);
 		assertEquals("F8V7067-APL-KIT", doc.get("number"));
 		
+		doc = facade.first("isbn", "978-1423103349");
+		assertNotNull(doc);
+		assertEquals("978-1423103349", doc.get("isbn"));
+		
 		doc = new Document();
-		doc.add(new TextField("number", "IW-02", Store.YES));
+		doc.add(new StringField("number", "IW-02", Store.YES));
 		doc.add(new TextField("name", "iPod &amp; iPod Mini USB 2.0 Cable", Store.NO));
 		doc.add(new TextField("manu", "Belkin", Store.NO));
 		String newId = facade.update(id, doc);
@@ -125,10 +132,10 @@ public class LuceneFacadeTest {
 
 	@Test
 	public void testSearch() throws InterruptedException {
-		List<Document> ls = facade.search("Apple");
-		assertFalse(ls.isEmpty());
+		Result r = facade.search("Apple");
+		assertFalse(r.documents.isEmpty());
 		
-		LuceneFacade.Page page = facade.search("Belkin", 0, 10);
+		LuceneFacade.Result page = facade.search("Belkin", 0, 10);
 		assertFalse(page.documents.isEmpty());
 		countDownLatch.await();
 	}

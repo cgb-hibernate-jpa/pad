@@ -14,15 +14,22 @@ import java.util.TreeSet;
 import javax.annotation.PreDestroy;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
 
 import com.github.emailtohl.lib.util.TextUtil;
 
@@ -36,6 +43,7 @@ public class FileSearch implements AutoCloseable {
 	public static final String FILE_CONTENT = "fileContent";
 	public static final String FILE_PATH = "filePath";
 	public static final String FILE_SIZE = "fileSize";
+	private final Logger LOG = LogManager.getLogger();
 	private LuceneFacade facade;
 	
 	/** 文本文件过滤器 */
@@ -124,25 +132,38 @@ public class FileSearch implements AutoCloseable {
 	/**
 	 * 查询出Lucene原始的Document对象
 	 * 
-	 * @param query 查询字符串
+	 * @param queryString 查询字符串
 	 * @return lucene文档列表
 	 */
-	public List<Document> search(String query) {
-		return facade.search(query);
+	public List<Document> search(String queryString) {
+		if (!StringUtils.hasText(queryString)) {
+			return new ArrayList<Document>();
+		}
+		QueryParser queryParser = new MultiFieldQueryParser(new String[] {FILE_NAME, FILE_CONTENT}, facade.analyzer);
+		try {
+			Query query = queryParser.parse(queryString);
+			return facade.search(query).documents;
+		} catch (ParseException | IOException e) {
+			LOG.catching(e);
+			return new ArrayList<Document>();
+		}
 	}
 
 	/**
 	 * 分页查询出Lucene原始的Document对象
 	 * 
-	 * @param query 查询语句
+	 * @param queryString 查询语句
 	 * @param pageable Spring-data的分页对象
 	 * @return Spring-data的页面对象
 	 */
-	public Page<Document> search(String query, Pageable pageable) {
-		LuceneFacade.Page page = facade.search(query, (int) pageable.getOffset(), pageable.getPageSize());
-		return new PageImpl<Document>(page.documents, pageable, page.totalHits);
+	public Page<Document> search(String queryString, Pageable pageable) {
+		if (!StringUtils.hasText(queryString)) {
+			return new PageImpl<Document>(new ArrayList<Document>(), pageable, 0);
+		}
+		LuceneFacade.Result result = facade.search(queryString, (int) pageable.getOffset(), pageable.getPageSize());
+		return new PageImpl<Document>(result.documents, pageable, result.totalHits);
 	}
-
+	
 	/**
 	 * 添加文件的索引
 	 * 
@@ -170,12 +191,12 @@ public class FileSearch implements AutoCloseable {
 			return "";
 		}
 		Document document = getDocument(file);
-		List<Document> ls = facade.search(file.getPath());
+		Document old = facade.first(FILE_PATH, file.getPath());
 		String id;
-		if (ls.isEmpty()) {
+		if (old == null) {
 			id = facade.create(document);
 		} else {
-			id = facade.update(ls.get(0).get(LuceneFacade.ID_NAME), document);
+			id = facade.update(old.get(LuceneFacade.ID_NAME), document);
 		}
 		return id;
 	}
@@ -188,9 +209,9 @@ public class FileSearch implements AutoCloseable {
 	 */
 	public void deleteIndex(File file) throws IOException {
 		if (textFileFilter.accept(file)) {
-			List<Document> ls = facade.search(file.getPath());
-			if (!ls.isEmpty()) {
-				facade.delete(ls.get(0).get(LuceneFacade.ID_NAME));
+			Document doc = facade.first(FILE_PATH, file.getPath());
+			if (doc != null) {
+				facade.delete(doc.get(LuceneFacade.ID_NAME));
 			}
 		}
 	}

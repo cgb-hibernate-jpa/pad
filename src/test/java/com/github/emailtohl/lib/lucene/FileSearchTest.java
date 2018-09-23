@@ -28,7 +28,7 @@ import org.springframework.data.domain.Sort.Order;
 public class FileSearchTest {
 	private static final Logger logger = LogManager.getLogger();
 	private static final String PATH = "src/test/java";
-	private static final String SEARCH_QUERY = "@Test";
+	private static final String SEARCH_QUERY = "FileSearchTest";
 	Random r = new Random();
 	File tempFile;
 	RAMDirectory directory;

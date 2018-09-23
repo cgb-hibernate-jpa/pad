@@ -48,6 +48,8 @@ public class LuceneFacade implements AutoCloseable {
 	public static final String ID_NAME = "UUID";
 	/** Document的属性名，创建时间 */
 	public static final String CREATE_TIME = "CREATE_TIME";
+	/** 索引和查询时使用的分词器 */
+	public final Analyzer analyzer;
 	/** 日志 */
 	private final Logger LOG = LogManager.getLogger();
 	/** 记录文档有哪些属性，便于查询 */
@@ -70,6 +72,7 @@ public class LuceneFacade implements AutoCloseable {
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public LuceneFacade(Directory indexBase, Analyzer analyzer) throws IOException {
+		this.analyzer = analyzer;
 		IndexWriterConfig conf = new IndexWriterConfig(analyzer);
 		// 每一次访问，创建新的索引,第二次访问，删掉原来的创建新的索引
 		conf.setOpenMode(OpenMode.CREATE);
@@ -166,9 +169,40 @@ public class LuceneFacade implements AutoCloseable {
 				return null;
 			}
 			doc = searcher.doc(docs.scoreDocs[0].doc);
-			LOG.debug(doc);
 		} catch (IOException e) {
-			LOG.error("Failed to open the index library", e);
+			LOG.error("Lucene Searcher throw the Exception", e);
+		} finally {
+			synchronized (this) {
+				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
+				queryCount--;
+				notifyAll();
+			}
+		}
+		return doc;
+	}
+	
+	/**
+	 * 根据StringField字段（不分词）名和值精确查询第一个文档，一般是由业务方保证该字段的唯一性
+	 * @param stringFieldName 索引时，用StringField存储的字段名
+	 * @param value 值
+	 * @return Lucene的文档
+	 */
+	public Document first(String stringFieldName, String value) {
+		Document doc = null;
+		try {
+			// 若正在执行refreshIndexReader中，那么就在此处等待
+			// 同一时间也只能由一个查询线程修改queryCount
+			synchronized (this) {
+				queryCount++;
+			}
+			Query query = new TermQuery(new Term(stringFieldName, value));
+			TopDocs docs = searcher.search(query, 1);
+			if (docs.scoreDocs.length == 0) {
+				return null;
+			}
+			doc = searcher.doc(docs.scoreDocs[0].doc);
+		} catch (IOException e) {
+			LOG.error("Lucene Searcher throw the Exception", e);
 		} finally {
 			synchronized (this) {
 				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
@@ -237,30 +271,26 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
-	 * hits for <code>query</code>.
-	 * Finds the top <code>n</code>
 	 * 代理原搜索器的搜索方法，对搜索的线程进行统计，以保证搜索器在执行时不被关闭
 	 * @param query 结构化的查询参数
-	 * @param n 符合条件的数量
-	 * @return 搜索结果的Lucene文档集合
+	 * @return 搜索结果，包括总数量，最大评分以及Lucene文档集合
 	 * @throws IOException BooleanQuery.TooManyClauses If a query would exceed 
      *         {@link BooleanQuery#getMaxClauseCount()} clauses.
 	 */
-	public List<Document> search(Query query, int n) throws IOException {
+	public Result search(Query query) throws IOException {
 		try {
 			// 若正在执行refreshIndexReader中，那么就在此处等待
 			// 同一时间也只能由一个查询线程修改queryCount
 			synchronized (this) {
 				queryCount++;
 			}
-			List<Document> documents = new ArrayList<Document>();
-			TopDocs topDocs = searcher.search(query, n);
+			TopDocs topDocs = searcher.search(query, DEFAULT_TOP_HITS);
+			Result result = new Result(topDocs);
 			for (ScoreDoc sd : topDocs.scoreDocs) {
 				Document doc = searcher.doc(sd.doc);
-				LOG.debug(doc);
-				documents.add(doc);
+				result.documents.add(doc);
 			}
-			return documents;
+			return result;
 		} finally {
 			synchronized (this) {
 				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
@@ -271,15 +301,15 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
-	 * 分页查询
+	 * 分段查询
 	 * 代理原搜索器的搜索方法，对搜索的线程进行统计，以保证搜索器在执行时不被关闭
 	 * @param query 结构化的查询参数
 	 * @param offset 数量
-	 * @return 分页后的Lucene文档搜索结果
+	 * @return 搜索结果，包括总数量，最大评分以及Lucene文档集合
 	 * @throws IOException BooleanQuery.TooManyClauses If a query would exceed 
      *         {@link BooleanQuery#getMaxClauseCount()} clauses.
 	 */
-	public Page search(Query query, int offset, int size) throws IOException {
+	public Result search(Query query, int offset, int size) throws IOException {
 		try {
 			// 若正在执行refreshIndexReader中，那么就在此处等待
 			// 同一时间也只能由一个查询线程修改queryCount
@@ -287,17 +317,14 @@ public class LuceneFacade implements AutoCloseable {
 				queryCount++;
 			}
 			int end = offset + size;
-			Page page = new Page();
 			TopDocs topDocs = searcher.search(query, DEFAULT_TOP_HITS);
-			page.totalHits = topDocs.totalHits;
-			page.maxScore = topDocs.getMaxScore();
+			Result result = new Result(topDocs);
 			for (int i = offset; i < end && i < topDocs.totalHits; i++) {
 				ScoreDoc sd = topDocs.scoreDocs[i];
 				Document doc = searcher.doc(sd.doc);
-				LOG.debug(doc);
-				page.documents.add(doc);
+				result.documents.add(doc);
 			}
-			return page;
+			return result;
 		} finally {
 			synchronized (this) {
 				// 无论发送什么错误也必须复原queryCount状态，并通知等待中的线程
@@ -310,21 +337,20 @@ public class LuceneFacade implements AutoCloseable {
 	/**
 	 * 查询出Lucene原始的Document对象
 	 * @param queryString 查询字符串
-	 * @return lucene的文档列表
+	 * @return 搜索结果，包括总数量，最大评分以及Lucene文档集合
 	 */
-	public List<Document> search(String queryString) {
+	public Result search(String queryString) {
 		String[] fields = new String[indexableFieldNames.size()];
-		QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields),
-				writer.getAnalyzer());
+		QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields), analyzer);
 		try {
 			Query query = queryParser.parse(queryString);
-			return search(query, DEFAULT_TOP_HITS);
+			return search(query);
 		} catch (IOException e) {
-			LOG.error("Failed to open the index library", e);
-			return new ArrayList<Document>();
+			LOG.error("Lucene Searcher throw the Exception", e);
+			return new Result(null);
 		} catch (ParseException e) {
 			LOG.error("Query statement parsing failed", e);
-			return new ArrayList<Document>();
+			return new Result(null);
 		}
 	}
 
@@ -334,33 +360,41 @@ public class LuceneFacade implements AutoCloseable {
 	 * @param queryString 查询字符串
 	 * @param offset 起始序号
 	 * @param size 每页大小
-	 * @return 分段查询的结果
+	 * @return 搜索结果，包括总数量，最大评分以及Lucene文档集合
 	 */
-	public Page search(String queryString, int offset, int size) {
+	public Result search(String queryString, int offset, int size) {
 		String[] fields = new String[indexableFieldNames.size()];
-		QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields),
-				writer.getAnalyzer());
+		QueryParser queryParser = new MultiFieldQueryParser(indexableFieldNames.toArray(fields), analyzer);
 		try {
 			Query query = queryParser.parse(queryString);
 			return search(query, offset, size);
 		} catch (IOException e) {
-			LOG.error("Failed to open the index library", e);
-			return new Page();
+			LOG.error("Lucene Searcher throw the Exception", e);
+			return new Result(null);
 		} catch (ParseException e) {
 			LOG.error("Query statement parsing failed", e);
-			return new Page();
+			return new Result(null);
 		}
 	}
 	
 	/**
-	 * 存储分段查询的数据结构
+	 * 搜索结果数据存储结构
 	 * 
 	 * @author HeLei
 	 */
-	public static class Page {
+	public static class Result {
 		public final List<Document> documents = new ArrayList<Document>();
-		public int totalHits;
-		public float maxScore;
+		public final int totalHits;
+		public final float maxScore;
+		public Result(TopDocs topDocs) {
+			if (topDocs == null) {
+				this.totalHits = 0;
+				this.maxScore = 0;
+			} else {
+				this.totalHits = topDocs.totalHits;
+				this.maxScore = topDocs.getMaxScore();
+			}
+		}
 	}
 	
 	/**
