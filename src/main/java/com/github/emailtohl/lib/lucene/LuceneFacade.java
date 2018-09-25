@@ -182,12 +182,14 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
-	 * 根据StringField字段（不分词）名和值精确查询第一个文档，一般是由业务方保证该字段的唯一性
-	 * @param stringFieldName 索引时，用StringField存储的字段名
-	 * @param value 值
+	 * <p>根据字段名和值精确查询第一个文档，一般用于唯一性键值查询</p>
+	 * <p>这里使用TermQuery进行精确查询，所以需要业务上保证此域的值唯一性</p>
+	 * <p>另外域的类型一般选择StringField，即在索引期间不做分词处理，否则原始值会被分词器处理，如去掉停用词，转为全小写等操作，造成查询失败</p>
+	 * @param fieldName 索引时，建议用StringField存储的字段名
+	 * @param value 查询的值
 	 * @return Lucene的文档
 	 */
-	public Document first(String stringFieldName, String value) {
+	public Document first(String fieldName, String value) {
 		Document doc = null;
 		try {
 			// 若正在执行refreshIndexReader中，那么就在此处等待
@@ -195,7 +197,7 @@ public class LuceneFacade implements AutoCloseable {
 			synchronized (this) {
 				queryCount++;
 			}
-			Query query = new TermQuery(new Term(stringFieldName, value));
+			Query query = new TermQuery(new Term(fieldName, value));
 			TopDocs docs = searcher.search(query, 1);
 			if (docs.scoreDocs.length == 0) {
 				return null;
@@ -305,6 +307,7 @@ public class LuceneFacade implements AutoCloseable {
 	 * 代理原搜索器的搜索方法，对搜索的线程进行统计，以保证搜索器在执行时不被关闭
 	 * @param query 结构化的查询参数
 	 * @param offset 数量
+	 * @param size 每页大小
 	 * @return 搜索结果，包括总数量，最大评分以及Lucene文档集合
 	 * @throws IOException BooleanQuery.TooManyClauses If a query would exceed 
      *         {@link BooleanQuery#getMaxClauseCount()} clauses.
@@ -414,6 +417,7 @@ public class LuceneFacade implements AutoCloseable {
 				reader.close();
 				if (writer.isOpen())
 					writer.close();
+				analyzer.close();
 			} catch (InterruptedException e) {
 				LOG.catching(e);
 			}
