@@ -175,6 +175,4 @@ class Condition {
 	public String toString() {
 		return "Condition [propertyName=" + propertyName + ", selfName=" + selfName + ", operator=" + operator + "]";
 	}
-
-
 }

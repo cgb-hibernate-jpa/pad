@@ -34,7 +34,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 
 /**
  * Entity 基类
- * 注意：依赖本基类的equals和hashCode方法会使你的实体对象在瞬时状态（没有id）时不能正确地存入集合（如HashSet）中
+ * <b>注意：依赖本基类的equals和hashCode方法会使你的实体对象在瞬时状态（没有id）时不能正确地存入集合（如HashSet）中</b>
  * 
  * @author HeLei
  */

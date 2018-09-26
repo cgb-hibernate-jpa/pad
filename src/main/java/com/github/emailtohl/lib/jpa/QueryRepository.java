@@ -1,8 +1,4 @@
 package com.github.emailtohl.lib.jpa;
-/**
- * 将实体对象作为查询的Example，创建出谓词关系为AND的Predicate[]
- * @author HeLei
- */
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -64,10 +60,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 根据参数对象分页查询
 	 * 
-	 * @param example
-	 *            参数对象
-	 * @param pageable
-	 *            分页排序信息
+	 * @param example 参数对象
+	 * @param pageable 分页排序信息
 	 * @return 结果列表
 	 */
 	public Page<E> queryForPage(E example, Pageable pageable) {
@@ -104,8 +98,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 根据参数对象查询列表
 	 * 
-	 * @param example
-	 *            参数对象
+	 * @param example 参数对象
 	 * @return 结果列表
 	 */
 	public List<E> queryForList(E example) {
@@ -126,12 +119,9 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 分析参数对象，最后返回一个AND关系的谓词集合
 	 * 
-	 * @param example
-	 *            参数对象
-	 * @param root
-	 *            实体的根
-	 * @param cb
-	 *            标准查询构造器
+	 * @param example 参数对象
+	 * @param root 实体的根
+	 * @param cb 标准查询构造器
 	 * @return AND关系的谓词集合
 	 */
 	protected Set<Predicate> getPredicates(Object example, Root<?> root, CriteriaBuilder cb) {
@@ -370,8 +360,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 从缓存中获取实体的所有属性
 	 * 
-	 * @param clazz
-	 *            从该class中分析出实体属性
+	 * @param clazz 从该class中分析出实体属性
 	 * @return 实体属性集合
 	 */
 	Set<EntityProperty> getEntityProperties(Class<?> clazz) {
@@ -393,8 +382,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 从缓存中获取自定义条件
 	 * 
-	 * @param clazz
-	 *            从该class中分析出自定义条件比较的信息
+	 * @param clazz 从该class中分析出自定义条件比较的信息
 	 * @return 条件比较信息的集合
 	 */
 	Set<Condition> getConditions(Class<?> clazz) {
@@ -416,8 +404,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 在对象中筛选出值对象
 	 * 
-	 * @param o
-	 *            参数对象
+	 * @param o 参数对象
 	 * @return 值对象返回true，否则返回false
 	 */
 	boolean availableObj(Object o) {
@@ -430,8 +417,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 判断集合中含的元素是否值对象
 	 * 
-	 * @param collection
-	 *            集合或者数组
+	 * @param collection 集合或者数组
 	 * @return 若集合或数组中的元素是值对象，则返回true，否则为false
 	 */
 	boolean availableCollection(Object collection) {
@@ -457,10 +443,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 若是基本类型，则判断是否忽略
 	 * 
-	 * @param type
-	 *            class类型
-	 * @param value
-	 *            值
+	 * @param type class类型
+	 * @param value 值
 	 * @return 若class类型为基本类型，且值是初始值，则返回true，否则为false
 	 */
 	boolean ignorePrimitive(Class<?> type, Object value) {
@@ -515,8 +499,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	/**
 	 * 若本身是集合则直接返回，否则将数组转成集合形式
 	 * 
-	 * @param value
-	 *            集合或数组
+	 * @param value 集合或数组
 	 * @return 集合
 	 */
 	Collection<?> toCollection(Object value) {

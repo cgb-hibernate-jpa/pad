@@ -137,12 +137,12 @@ public abstract class StandardService<E, ID extends Serializable> {
 	}
 
 	/**
-	 * 判断字符串是否存在 
-	 * hasText(null) = false
-	 * hasText("") = false
-	 * hasText(" ") = false
-	 * hasText("12345") = true
-	 * hasText(" 12345 ") = true
+	 * 判断字符串是否存在文本 
+	 * <p>hasText(null) = false</p>
+	 * <p>hasText("") = false</p>
+	 * <p>hasText(" ") = false</p>
+	 * <p>hasText("12345") = true</p>
+	 * <p>hasText(" 12345 ") = true</p>
 	 * 
 	 * @param text 被判断的字符串文本
 	 * @return 字符串是否为null或空字符串

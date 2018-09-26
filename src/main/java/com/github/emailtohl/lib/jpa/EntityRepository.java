@@ -17,10 +17,8 @@ import org.springframework.stereotype.Repository;
  * 基本JPA仓库
  * 
  * @author HeLei
- * @param <E>
- *            实体类型
- * @param <ID>
- *            实体的ID类型
+ * @param <E> 实体类型
+ * @param <ID> 实体的ID类型
  */
 @Repository
 public abstract class EntityRepository<E, ID extends Serializable> implements EntityInterface<E, ID> {
@@ -91,6 +89,7 @@ public abstract class EntityRepository<E, ID extends Serializable> implements En
 	
 	/**
 	 * 获取实体
+	 * 
 	 * @param primaryKey 主键
 	 * @return 该主键的实体对象
 	 */
@@ -100,6 +99,7 @@ public abstract class EntityRepository<E, ID extends Serializable> implements En
 	
 	/**
 	 * 保存实体，修改实体则是通过find找到它并修改它即可
+	 * 
 	 * @param entity 实体对象
 	 */
 	public void persist(E entity) {
@@ -108,6 +108,7 @@ public abstract class EntityRepository<E, ID extends Serializable> implements En
 	
 	/**
 	 * 删除实体
+	 * 
 	 * @param entity 实体对象
 	 */
 	public void remove(E entity) {

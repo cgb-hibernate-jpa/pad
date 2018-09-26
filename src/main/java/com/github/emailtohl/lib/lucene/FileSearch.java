@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,6 +44,7 @@ public class FileSearch implements AutoCloseable {
 	public static final String FILE_CONTENT = "fileContent";
 	public static final String FILE_PATH = "filePath";
 	public static final String FILE_SIZE = "fileSize";
+	final Set<String> charsets = Charset.availableCharsets().keySet();
 	private final Logger LOG = LogManager.getLogger();
 	private LuceneFacade facade;
 	

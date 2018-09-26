@@ -26,10 +26,8 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
  * 
  * @author HeLei
  *
- * @param <E>
- *            实体类型
- * @param <ID>
- *            实体的ID类型
+ * @param <E> 实体类型
+ * @param <ID> 实体的ID类型
  */
 public abstract class SearchRepository<E, ID extends Serializable> extends QueryRepository<E, ID> implements SearchInterface<E, ID> {
 	private static volatile boolean IS_INIT = false;

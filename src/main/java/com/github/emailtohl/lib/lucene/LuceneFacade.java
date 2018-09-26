@@ -67,16 +67,16 @@ public class LuceneFacade implements AutoCloseable {
 	
 	/**
 	 * 构造LuceneClient
-	 * @param indexBase 指定索引存储地址
+	 * @param indexPath 指定索引存储地址
 	 * @param analyzer 指定索引和搜索使用的分词器
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneFacade(Directory indexBase, Analyzer analyzer) throws IOException {
+	public LuceneFacade(Directory indexPath, Analyzer analyzer) throws IOException {
 		this.analyzer = analyzer;
 		IndexWriterConfig conf = new IndexWriterConfig(analyzer);
 		// 每一次访问，创建新的索引,第二次访问，删掉原来的创建新的索引
 		conf.setOpenMode(OpenMode.CREATE);
-		writer = new IndexWriter(indexBase, conf);
+		writer = new IndexWriter(indexPath, conf);
 		reader = DirectoryReader.open(writer);
 		searcher = new IndexSearcher(reader);
 	}
@@ -84,21 +84,21 @@ public class LuceneFacade implements AutoCloseable {
 	/**
 	 * 指定索引目录，也可以接受内存形式的索引目录
 	 * 
-	 * @param indexBase 索引目录
+	 * @param indexPath 索引目录
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneFacade(Directory indexBase) throws IOException {
-		this(indexBase, new StandardAnalyzer());
+	public LuceneFacade(Directory indexPath) throws IOException {
+		this(indexPath, new StandardAnalyzer());
 	}
 	
 	/**
 	 * 只接受文件系统的索引目录
 	 * 
-	 * @param path 文件系统的索引目录
+	 * @param indexPath 文件系统的索引目录
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneFacade(String path) throws IOException {
-		this(FSDirectory.open(Paths.get(path)), new StandardAnalyzer());
+	public LuceneFacade(String indexPath) throws IOException {
+		this(FSDirectory.open(Paths.get(indexPath)), new StandardAnalyzer());
 	}
 	
 	/**

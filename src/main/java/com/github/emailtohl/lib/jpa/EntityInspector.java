@@ -62,8 +62,8 @@ class EntityInspector {
 	/**
 	 * 从JavaBean属性描述器中获取注解
 	 * 
-	 * @param descriptor
-	 * @param annotationClass
+	 * @param descriptor JavaBean属性描述器
+	 * @param annotationClass 注解的class
 	 * @return
 	 */
 	static <A extends Annotation> A getAnnotation(PropertyDescriptor descriptor, Class<A> annotationClass) {
@@ -82,8 +82,7 @@ class EntityInspector {
 	/**
 	 * 对注解了@Entity的类进行分析，确定其访问的规则，默认返回PROPERTY，这不仅是JPA默认规则，而且与BaseEntity规则一致
 	 * 
-	 * @param entityClass
-	 *            注解了@Entity的类
+	 * @param entityClass 注解了@Entity的类
 	 * @return 访问规则：FIELD还是PROPERTY
 	 */
 	static AccessType getAccessType(Class<?> entityClass) {
@@ -122,7 +121,7 @@ class EntityInspector {
 
 	/**
 	 * 获取特殊属性的比较方式，以JavaBean属性优先
-	 * 
+	 * @param clazz 被标注了@Instruction，需要分析的类
 	 * @return 特殊属性的比较方式，key实体的属性名，value是操作符
 	 */
 	static Set<Condition> getConditions(Class<?> clazz) {
@@ -171,8 +170,7 @@ class EntityInspector {
 	 * 标注了@Entity的类，但它的父类存在既不含@Entity也不含@MappedSuperclass的类
 	 * 所以对于那些不能映射到数据库表字段的属性，均需要排除。
 	 * 
-	 * @param clazz
-	 *            需要分析的类
+	 * @param clazz 被标注了Entity、Embeddable的实体类
 	 * @return 一个entityClass，stopClass 2个元素的数组，在继承上为上闭下开，在baseclass上停止分析
 	 */
 	static Class<?>[] findEntityBound(Class<?> clazz) {
@@ -217,8 +215,7 @@ class EntityInspector {
 	/**
 	 * 通过分析字段获取属性
 	 * 
-	 * @param clazz
-	 *            被分析的类
+	 * @param clazz 被标注了Entity、Embeddable的实体类
 	 * @return 属性集合
 	 */
 	static <T> Set<EntityProperty> getEntityPropertyByField(Class<T> clazz) {
@@ -255,8 +252,7 @@ class EntityInspector {
 	/**
 	 * 根据JPA定义，实体类的属性包括非private字段以及JavaBean定义的属性
 	 * 
-	 * @param clazz
-	 *            被分析的类
+	 * @param clazz 被标注了Entity、Embeddable的实体类
 	 * @return 属性集合
 	 */
 	static <T> Set<EntityProperty> getEntityPropertyByJpaDefinition(Class<T> clazz) {
@@ -309,8 +305,7 @@ class EntityInspector {
 	/**
 	 * 分析出实体类中的属性 注意：若是继承于某个实体类的类，则仍然只返回实体类的属性
 	 * 
-	 * @param clazz
-	 *            某类
+	 * @param clazz 被标注了Entity、Embeddable的实体类
 	 * @return 作为映射关系部分的属性
 	 */
 	static <T> Set<EntityProperty> getEntityProperty(Class<T> clazz) {
@@ -326,10 +321,10 @@ class EntityInspector {
 	}
 
 	/**
-	 * 从属性描述器中获取泛型的实际Class
+	 * 从属性描述器中获取泛型的实际Class，例如某JavaBean有属性Set<String> roles，则返回{String.class}
 	 * 
-	 * @param p
-	 * @return
+	 * @param p JavaBean属性描述器
+	 * @return 该属性的泛型类
 	 */
 	static Class<?>[] getGenericClass(PropertyDescriptor p) {
 		List<Class<?>> ls = new ArrayList<Class<?>>();
@@ -361,10 +356,10 @@ class EntityInspector {
 	}
 
 	/**
-	 * 从Field中获取泛型的实际Class
+	 * 从Field字段中获取泛型的实际Class，例如某Field是Set<String> roles，则返回{String.class}
 	 * 
-	 * @param f
-	 * @return
+	 * @param f Field字段
+	 * @return 该字段的泛型类
 	 */
 	static Class<?>[] getGenericClass(Field f) {
 		ElementCollection elementCollection = f.getAnnotation(ElementCollection.class);
@@ -391,6 +386,14 @@ class EntityInspector {
 		return ls.toArray(cs);
 	}
 
+	/**
+	 * 返回关联关系的类型
+	 * 
+	 * @param elementCollection 嵌入式集合关系，其实例无独立生命周期，主关系被删除后，会被级联删除
+	 * @param oneToMany 一对多关系，其实例具有独立的生命周期
+	 * @param manyToMany 多对多关系，其实例具有独立生命周期
+	 * @return 关联关系的类型
+	 */
 	static private Class<?> getTargetClass(ElementCollection elementCollection, OneToMany oneToMany, ManyToMany manyToMany) {
 		if (elementCollection != null) {
 			return elementCollection.targetClass();
