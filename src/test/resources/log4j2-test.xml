@@ -37,6 +37,6 @@
 		<logger name="org.apache" level="info">
 			<!-- <appender-ref ref="libFileAppender" /> -->
 		</logger>
-		<logger name="org.hibernate.type.descriptor.sql" level="trace"></logger>
+		<!-- <logger name="org.hibernate.type.descriptor.sql" level="trace"></logger> -->
 	</loggers>
 </configuration>

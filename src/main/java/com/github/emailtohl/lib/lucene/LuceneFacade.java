@@ -1,6 +1,7 @@
 package com.github.emailtohl.lib.lucene;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.LongField;
@@ -121,6 +124,9 @@ public class LuceneFacade implements AutoCloseable {
 			doc.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 			for (IndexableField field : doc.getFields()) {
 				indexableFieldNames.add(field.name());
+				if (LOG.isDebugEnabled() && field.fieldType().tokenized()) {
+					debugToken(field.name(), field.stringValue());
+				}
 			}
 			writer.addDocument(doc);
 		}
@@ -143,6 +149,9 @@ public class LuceneFacade implements AutoCloseable {
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
+			if (LOG.isDebugEnabled() && field.fieldType().tokenized()) {
+				debugToken(field.name(), field.stringValue());
+			}
 		}
 		writer.addDocument(document);
 		writer.commit();
@@ -229,6 +238,9 @@ public class LuceneFacade implements AutoCloseable {
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
+			if (LOG.isDebugEnabled() && field.fieldType().tokenized()) {
+				debugToken(field.name(), field.stringValue());
+			}
 		}
 		writer.updateDocument(new Term(ID_NAME, id), document);
 		writer.commit();
@@ -430,4 +442,32 @@ public class LuceneFacade implements AutoCloseable {
 		close();
 	}
 	
+	/**
+	 * 查看分词信息
+	 * @param fieldName 字段名
+	 * @param text 待分词的字符串
+	 */
+	private void debugToken(String fieldName, String text) {
+		// 将一个字符串创建成Token流
+		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
+		try {
+			// 保存相应词汇
+			CharTermAttribute cta = tokenStream.addAttribute(CharTermAttribute.class);
+			tokenStream.reset();
+			StringBuilder sb = new StringBuilder();
+			sb.append("fieldName:").append(fieldName).append("  tokens:");
+			while (tokenStream.incrementToken()) {
+				sb.append('[').append(cta).append(']');
+			}
+			LOG.debug(sb);
+		} catch (IOException e) {
+			LOG.catching(e);
+		} finally {
+			try {
+				tokenStream.close();
+			} catch (IOException e) {
+				LOG.catching(e);
+			}
+		}
+	}
 }
