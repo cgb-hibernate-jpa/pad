@@ -15,6 +15,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.LongField;
@@ -447,19 +450,38 @@ public class LuceneFacade implements AutoCloseable {
 	 * @param fieldName 字段名
 	 * @param text 待分词的字符串
 	 */
-	private void debugToken(String fieldName, String text) {
+	public void debugToken(String fieldName, String text) {
 		// 将一个字符串创建成Token流
 		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		try {
 			// 保存相应词汇
 			CharTermAttribute cta = tokenStream.addAttribute(CharTermAttribute.class);
+			PositionIncrementAttribute posIncr = tokenStream.addAttribute(PositionIncrementAttribute.class);
+			OffsetAttribute offset = tokenStream.addAttribute(OffsetAttribute.class);
+			TypeAttribute type = tokenStream.addAttribute(TypeAttribute.class);
+			
 			tokenStream.reset();
 			StringBuilder sb = new StringBuilder();
-			sb.append("fieldName:").append(fieldName).append("  tokens:");
+			sb.append('[');
+			int position = 0;
+			boolean first = true;
+			LOG.debug("analyzer:{}, text: {}, result:", analyzer.getClass().getSimpleName(), text);
 			while (tokenStream.incrementToken()) {
-				sb.append('[').append(cta).append(']');
+				int increment = posIncr.getPositionIncrement();
+				position = position + increment;
+				if (first) {
+					first = false;
+				} else {
+					sb.append(',');
+				}
+				sb.append('{').append('"').append("position").append('"').append(':').append(position).append(',')
+				.append('"').append("term").append('"').append(':').append('"').append(cta).append('"').append(',')
+				.append('"').append("start").append('"').append(':').append(offset.startOffset()).append(',')
+				.append('"').append("end").append('"').append(':').append(offset.endOffset()).append(',')
+				.append('"').append("type").append('"').append(':').append('"').append(type.type()).append('"').append('}');
 			}
-			LOG.debug(sb);
+			sb.append(']');
+			LOG.debug(sb.toString() + "\n");
 		} catch (IOException e) {
 			LOG.catching(e);
 		} finally {
