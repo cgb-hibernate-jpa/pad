@@ -21,36 +21,44 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Order;
 
-public class FileSearchTest {
+public class TextFileSearchTest {
 	private static final Logger logger = LogManager.getLogger();
-	private static final String PATH = "src/test/java";
-	private static final String SEARCH_QUERY = "FileSearchTest";
+	private static final String SEARCH_QUERY = "长江 英雄 秋月";
 	Random r = new Random();
-	File tempFile;
+	File tempDir;
+	File textFile;
 	RAMDirectory directory;
-	FileSearch fs;
+	TextFileSearch fs;
 
 	@Before
 	public void setUp() throws Exception {
-		File thisFile = new File(
-				PATH + File.separator + FileSearch.convertPackageNameToFilePath(getClass().getName()) + ".java");
-		tempFile = new File(System.getProperty("java.io.tmpdir"), "testFileSearch");
-		FileUtils.copyFile(thisFile.getAbsoluteFile(), tempFile);
+		String text = "滚滚长江东逝水，浪花淘尽英雄。是非成败转头空。\r\n" + 
+				"    　青山依旧在，几度夕阳红。\r\n" + 
+				"    　白发渔樵江渚上，惯看秋月春风。一壶浊酒喜相逢。\r\n" + 
+				"      古今多少事，都付笑谈中。\r\n" + 
+				"　　　　　　　　　　　　　　　　　　——调寄《临江仙》";
+		tempDir = new File(System.getProperty("java.io.tmpdir"), "testDir");
+		if (!tempDir.exists()) {
+			tempDir.mkdir();
+		}
+		textFile = new File(tempDir, "临江仙");
+		if (!textFile.exists()) {
+			textFile.createNewFile();
+		}
+		FileUtils.write(textFile, text, "UTF-8");
 
-		// 创建一个内存目录
+		// 创建一个内存索引目录
 		directory = new RAMDirectory();
-		fs = new FileSearch(directory);
-		fs.index(tempFile);
+		fs = new TextFileSearch(directory);
+		fs.index(tempDir);
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		fs.close();
-		tempFile.delete();
+		textFile.delete();
+		tempDir.delete();
 	}
 
 	@Test
@@ -59,13 +67,7 @@ public class FileSearchTest {
 		result.forEach(s -> logger.debug(s));
 		assertFalse(result.isEmpty());
 
-		Order[] orders = { Order.desc(FileSearch.FILE_NAME), Order.desc(FileSearch.FILE_CONTENT) };
-		Sort sort = Sort.by(orders);
-		Pageable pageable = PageRequest.of(1, 5, sort);
-		Page<Document> page = fs.search(SEARCH_QUERY, pageable);
-		logger.debug(page.getNumber());
-		logger.debug(page.getSize());
-		logger.debug(page.getTotalElements());
+		Page<Document> page = fs.search(SEARCH_QUERY, PageRequest.of(0, 5));
 		for (Document d : page.getContent()) {
 			logger.debug(d);
 		}
@@ -77,8 +79,8 @@ public class FileSearchTest {
 		for (int i = 0; i < count; i++) {
 			exec.submit(() -> {
 				try {
-					FileUtils.writeStringToFile(tempFile, r.nextInt(100) + " ", StandardCharsets.UTF_8, true);
-					fs.updateIndex(tempFile);
+					FileUtils.writeStringToFile(textFile, r.nextInt(100) + " ", StandardCharsets.UTF_8, true);
+					fs.updateIndex(tempDir);
 				} catch (IOException e) {
 					e.printStackTrace();
 				} finally {
@@ -88,13 +90,14 @@ public class FileSearchTest {
 		}
 		for (int i = 0; i < count; i++) {
 			exec.submit(() -> {
-				fs.searchForFilePath(getClass().getSimpleName());
+				Set<String> r = fs.searchForFilePath("渔樵 浊酒");
+				assertFalse(r.isEmpty());
 			});
 		}
 		latch.await();
-		result = fs.searchForFilePath(getClass().getSimpleName());
+		result = fs.searchForFilePath("笑谈");
 		logger.debug(result);
 		assertFalse(result.isEmpty());
-		fs.deleteIndex(tempFile);
+		fs.deleteIndex(tempDir);
 	}
 }

@@ -39,7 +39,7 @@ import com.github.emailtohl.lib.util.TextUtil;
  * 
  * @author HeLei
  */
-public class FileSearch implements AutoCloseable {
+public class TextFileSearch implements AutoCloseable {
 	public static final String FILE_NAME = "fileName";
 	public static final String FILE_CONTENT = "fileContent";
 	public static final String FILE_PATH = "filePath";
@@ -57,7 +57,7 @@ public class FileSearch implements AutoCloseable {
 	 * @param indexBase 索引目录
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public FileSearch(Directory indexBase) throws IOException {
+	public TextFileSearch(Directory indexBase) throws IOException {
 		facade = new LuceneFacade(indexBase);
 	}
 
@@ -67,7 +67,7 @@ public class FileSearch implements AutoCloseable {
 	 * @param indexBaseFSDirectory 文件系统的索引目录
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public FileSearch(String indexBaseFSDirectory) throws IOException {
+	public TextFileSearch(String indexBaseFSDirectory) throws IOException {
 		facade = new LuceneFacade(indexBaseFSDirectory);
 	}
 
