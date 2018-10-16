@@ -44,7 +44,7 @@ public class EntityListener {
 	 * @param entity 基类
 	 */
 	@PrePersist
-	public void prePersist(EntityBase entity) {
+	public void prePersist(BaseEntity entity) {
 		entity.setCreateDate(new Date());
 		entity.setModifyDate(new Date());
 	}
@@ -55,17 +55,17 @@ public class EntityListener {
 	 * @param entity 基类
 	 */
 	@PreUpdate
-	public void preUpdate(EntityBase entity) {
+	public void preUpdate(BaseEntity entity) {
 		entity.setModifyDate(new Date());
 	}
 
 	@PostLoad
-	void readTrigger(EntityBase entity) {
+	void readTrigger(BaseEntity entity) {
 		LOG.debug("entity read.");
 	}
 
 	@PostPersist
-	void afterInsertTrigger(EntityBase entity) {
+	void afterInsertTrigger(BaseEntity entity) {
 		LOG.debug("entity inserted into database.");
 		if (EVENT_PUBLISHER != null) {
 			CreateEntityEvent event = new CreateEntityEvent(entity);
@@ -74,7 +74,7 @@ public class EntityListener {
 	}
 
 	@PostUpdate
-	void afterUpdateTrigger(EntityBase entity) {
+	void afterUpdateTrigger(BaseEntity entity) {
 		LOG.debug("entity just updated in the database.");
 		if (EVENT_PUBLISHER != null) {
 			UpdateEntityEvent event = new UpdateEntityEvent(entity);
@@ -83,12 +83,12 @@ public class EntityListener {
 	}
 
 	@PreRemove
-	void beforeDeleteTrigger(EntityBase entity) {
+	void beforeDeleteTrigger(BaseEntity entity) {
 		LOG.debug("entity about to be deleted.");
 	}
 
 	@PostRemove
-	void afterDeleteTrigger(EntityBase entity) {
+	void afterDeleteTrigger(BaseEntity entity) {
 		LOG.debug("entity about deleted from database.");
 		if (EVENT_PUBLISHER != null) {
 			DeleteEntityEvent event = new DeleteEntityEvent(entity);

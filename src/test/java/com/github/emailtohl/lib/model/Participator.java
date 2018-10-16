@@ -14,14 +14,14 @@ import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.emailtohl.lib.jpa.EntityBase;
+import com.github.emailtohl.lib.jpa.BaseEntity;
 
 @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler", "fieldHandler" })
 @Audited
 @Indexed
 @Entity
 @Table(name = "PARTICIPATOR")
-public class Participator extends EntityBase {
+public class Participator extends BaseEntity {
 	private static final long serialVersionUID = 3386469327429384582L;
 
     @NotNull

@@ -49,7 +49,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
  * 如果改成@Entity，则继承后，多个类继承，只会生成一个表，而不是多个继承，生成多个表。
  */
 @MappedSuperclass
-public abstract class EntityBase implements Serializable, Cloneable {
+public abstract class BaseEntity implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
 	private static final ObjectMapper om = new ObjectMapper();
 	protected static final Logger LOG = LogManager.getLogger();
@@ -194,7 +194,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 		// 由于this是BaseEntity的实例，所以这种判断涵盖other instanceof BaseEntity
 		if (!thisClass.isAssignableFrom(otherClass) && !otherClass.isAssignableFrom(thisClass))
 			return false;
-		EntityBase other = (EntityBase) obj;
+		BaseEntity other = (BaseEntity) obj;
 		if (id == null || other.getId() == null) {// 注意此处不能直接访问other的字段：other.id，因为other可能是JPA提供程序生成的代理
 			return false;
 		} else {
@@ -212,7 +212,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	}
 	
 	@Override
-	public EntityBase clone() {
+	public BaseEntity clone() {
 		ObjectInputStream in = null;
 		ObjectOutputStream out = null;
 		try {
@@ -220,7 +220,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 			out = new ObjectOutputStream(bout);
 			out.writeObject(this);
 			in = new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-			return (EntityBase) in.readObject();
+			return (BaseEntity) in.readObject();
 		} catch (IOException | ClassNotFoundException e) {
 			LOG.warn("The clone method execution on BaseEntity failed", e);
 			throw new InnerDataStateException(e);

@@ -5,11 +5,11 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.validation.constraints.NotNull;
 
-import com.github.emailtohl.lib.jpa.EntityBase;
+import com.github.emailtohl.lib.jpa.BaseEntity;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-public abstract class BillingDetails extends EntityBase {
+public abstract class BillingDetails extends BaseEntity {
 	private static final long serialVersionUID = 8115915240285958633L;
 
     @NotNull
