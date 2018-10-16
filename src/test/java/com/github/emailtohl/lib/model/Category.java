@@ -19,13 +19,13 @@ import org.hibernate.search.annotations.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.emailtohl.lib.entities.SelfRef;
-import com.github.emailtohl.lib.jpa.BaseEntity;
+import com.github.emailtohl.lib.jpa.EntityBase;
 
 @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @Audited
 @Indexed
 @Entity
-public class Category extends BaseEntity implements SelfRef {
+public class Category extends EntityBase implements SelfRef {
 	private static final long serialVersionUID = 8972855909524370689L;
 
     @NotNull
