@@ -19,14 +19,14 @@ import org.hibernate.search.annotations.Indexed;
 import org.hibernate.search.annotations.IndexedEmbedded;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.emailtohl.lib.jpa.BaseEntity;
+import com.github.emailtohl.lib.jpa.EntityBase;
 
 @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @Audited
 @Indexed
 @Entity
 @Access(AccessType.PROPERTY)
-public class Bid extends BaseEntity {
+public class Bid extends EntityBase {
 	private static final long serialVersionUID = -7815293333915832861L;
 	
 	protected String name;
