@@ -6,9 +6,17 @@ import java.beans.PropertyDescriptor;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.Timestamp;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolation;
@@ -167,46 +175,71 @@ public abstract class StandardService<E, ID extends Serializable> {
 	 * 对JavaBean的字符串属性进行裁剪，主要用于提交表单的情况
 	 * 
 	 * @param o 传入参数对象
+	 * @return 因为字符串的不变性（形参不会被方法内部修改），所以需要返回修改后的值
+	 * 若是字符串，则返回裁剪空白后的字符串，否则原样返回
 	 */
-	public void trimStringProperty(Object o) {
-		if (o instanceof String) {
-			o = ((String) o).trim();
-		}
-		try {
-			for (PropertyDescriptor pd : Introspector.getBeanInfo(o.getClass(), Object.class)
-					.getPropertyDescriptors()) {
-				Method getter = pd.getReadMethod(), setter = pd.getWriteMethod();
-				if (getter == null || setter == null) {
-					continue;
+	public Object trimStringProperty(Object o) {
+		class Runner {
+			// 跟踪是否使用过，防止循环引用
+			Set<Object> used = new HashSet<>();
+			Object exec(Object o) {
+				if (o == null) {
+					return o;
 				}
-				Object value = getter.invoke(o, new Object[] {});
-				if (value == null) {
-					continue;
+				if (used.contains(o)) {
+					return o;
 				}
-				if (String.class.equals(pd.getPropertyType())) {
-					setter.invoke(o, ((String) value).trim());
-				} else if (Collection.class.isAssignableFrom(pd.getPropertyType())) {
+				used.add(o);
+				if (o instanceof String) {
+					return ((String) o).trim();
+				}
+				boolean b = o instanceof Number || o instanceof Enum || o instanceof Character || o instanceof Boolean
+						|| o instanceof Date || o instanceof Calendar || o instanceof Timestamp || o instanceof TimeZone
+						|| o instanceof TemporalAmount || o instanceof Temporal;
+				if (b) {
+					return o;
+				}
+				if (o instanceof Collection) {
 					@SuppressWarnings("unchecked")
-					Collection<Object> collection = (Collection<Object>) value;
-					if (collection.isEmpty()) {
-						continue;
-					}
-					if (collection.iterator().next() instanceof String) {
-						List<String> strings = collection.stream().map(oo -> ((String) oo).trim()).collect(Collectors.toList());
-						collection.clear();
-						collection.addAll(strings);
-					} else {
-						for (Object v : (Collection<?>) value) {
-							trimStringProperty(v);
-						}
-					}
-				} else {
-					trimStringProperty(value);
+					Collection<Object> c = (Collection<Object>) o;
+					List<Object> temp = c.stream().map(this::exec).collect(Collectors.toList());
+					c.clear();
+					temp.forEach(i -> {
+						c.add(i);
+					});
+					return o;
 				}
+				if (o instanceof Map) {
+					@SuppressWarnings("unchecked")
+					Map<Object, Object> m = (Map<Object, Object>) o;
+					m = m.entrySet().stream().map(e -> {
+						e.setValue(exec(e.getValue()));
+						return e;
+					}).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+					return o;
+				}
+				try {
+					for (PropertyDescriptor pd : Introspector.getBeanInfo(o.getClass(), Object.class)
+							.getPropertyDescriptors()) {
+						Method getter = pd.getReadMethod(), setter = pd.getWriteMethod();
+						if (getter == null || setter == null) {
+							continue;
+						}
+						getter.setAccessible(true);
+						Object value = getter.invoke(o, new Object[] {});
+						if (value == null) {
+							continue;
+						}
+						setter.setAccessible(true);
+						setter.invoke(o, exec(value));
+					}
+				} catch (IntrospectionException | IllegalAccessException | IllegalArgumentException
+						| InvocationTargetException e1) {
+					LOG.catching(e1);
+				}
+				return o;
 			}
-		} catch (IntrospectionException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException e1) {
-			LOG.catching(e1);
 		}
+		return new Runner().exec(o);
 	}
 }
