@@ -237,6 +237,15 @@ public class QueryRepositoryTest extends TestEnvironment {
 			public short _null;
 			@Instruction(propertyName = "seller", operator = Operator.NOT_NULL)
 			public short notNull;
+			@ExcludeCondition
+			public double excludeFile = 1.1;
+			@ExcludeCondition
+			public double getExcludeFileProp() {
+				return 1.1 * 1.2;
+			}
+			@SuppressWarnings("unused")
+			public void setExcludeFileProp(double empty) {
+			}
 		}
 		ItemForm form = new ItemForm();
 		form.setCreatedOn(null);

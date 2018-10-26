@@ -151,6 +151,10 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 				used.add(o);
 				// 先分析实体属性
 				for (EntityProperty prop : getEntityProperties(o.getClass())) {
+					// 排除不作为查询条件的属性
+					if (prop.getAnnotation(ExcludeCondition.class) != null) {
+						continue;
+					}
 					if (prop.getAnnotation(Instruction.class) != null) {
 						continue; // 在特殊比较中处理
 					}
@@ -219,6 +223,10 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 				// 再分析自定义条件（被@Instruction注解的属性）
 				// 既然是指定比较，那一定是属性的值为值对象时才有效，否则若注解在属性为关联实体上则没有意义
 				for (Condition condition : getConditions(o.getClass())) {
+					// 排除不作为查询条件的属性
+					if (condition.getAnnotation(ExcludeCondition.class) != null) {
+						continue;
+					}
 					Object value = condition.getValue(o);
 					if (value == null) {
 						continue;

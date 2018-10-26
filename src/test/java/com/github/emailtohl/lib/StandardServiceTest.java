@@ -51,66 +51,10 @@ public class StandardServiceTest extends TestEnvironment {
 	
 	@Test
 	public void testTrimStringProperty() {
-		@SuppressWarnings("unused")
-		class Foo {
-			int a;
-			String b;
-			String c;
-			Integer d;
-			Set<String> e = new HashSet<>();
-			Date f;
-			Set<Foo> g = new HashSet<>();
-			Foo h;
-			public int getA() {
-				return a;
-			}
-			public void setA(int a) {
-				this.a = a;
-			}
-			public String getB() {
-				return b;
-			}
-			public void setB(String b) {
-				this.b = b;
-			}
-			public String getC() {
-				return c;
-			}
-			public void setC(String c) {
-				this.c = c;
-			}
-			public Integer getD() {
-				return d;
-			}
-			public void setD(Integer d) {
-				this.d = d;
-			}
-			public Set<String> getE() {
-				return e;
-			}
-			public void setE(Set<String> e) {
-				this.e = e;
-			}
-			public Date getF() {
-				return f;
-			}
-			public void setF(Date f) {
-				this.f = f;
-			}
-			public Set<Foo> getG() {
-				return g;
-			}
-			public void setG(Set<Foo> g) {
-				this.g = g;
-			}
-			public Foo getH() {
-				return h;
-			}
-			public void setH(Foo h) {
-				this.h = h;
-			}
-		}
 		Foo f = new Foo();
+		Bar b = new Bar();
+		b.foo = f;
+		f.bar = b;
 		f.setA(1);
 		f.setB("  123   ");
 		f.setC(null);
@@ -123,6 +67,70 @@ public class StandardServiceTest extends TestEnvironment {
 		assertEquals("456", f.getE().iterator().next());
 	}
 	
+}
+
+class Foo {
+	int a;
+	String b;
+	String c;
+	Integer d;
+	Set<String> e = new HashSet<>();
+	Date f;
+	Set<Foo> g = new HashSet<>();
+	Foo h;
+	Bar bar;
+	public int getA() {
+		return a;
+	}
+	public void setA(int a) {
+		this.a = a;
+	}
+	public String getB() {
+		return b;
+	}
+	public void setB(String b) {
+		this.b = b;
+	}
+	public String getC() {
+		return c;
+	}
+	public void setC(String c) {
+		this.c = c;
+	}
+	public Integer getD() {
+		return d;
+	}
+	public void setD(Integer d) {
+		this.d = d;
+	}
+	public Set<String> getE() {
+		return e;
+	}
+	public void setE(Set<String> e) {
+		this.e = e;
+	}
+	public Date getF() {
+		return f;
+	}
+	public void setF(Date f) {
+		this.f = f;
+	}
+	public Set<Foo> getG() {
+		return g;
+	}
+	public void setG(Set<Foo> g) {
+		this.g = g;
+	}
+	public Foo getH() {
+		return h;
+	}
+	public void setH(Foo h) {
+		this.h = h;
+	}
+}
+
+class Bar {
+	Foo foo;
 }
 
 @Service
