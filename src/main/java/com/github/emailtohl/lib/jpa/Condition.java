@@ -102,6 +102,7 @@ class Condition {
 	Object getValue(Object entity) {
 		try {
 			if (AccessType.PROPERTY == accessType) {
+				getter.setAccessible(true);
 				return getter.invoke(entity, args);
 			} else {
 				return field.get(entity);
