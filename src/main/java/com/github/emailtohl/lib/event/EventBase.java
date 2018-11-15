@@ -15,6 +15,6 @@ public class EventBase extends ApplicationEvent {
 	}
 
 	public EventBase() {
-		this("evo event");
+		this("event base");
 	}
 }
