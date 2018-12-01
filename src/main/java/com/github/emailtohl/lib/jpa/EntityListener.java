@@ -2,7 +2,6 @@ package com.github.emailtohl.lib.jpa;
 
 import java.util.Date;
 
-import javax.annotation.PostConstruct;
 import javax.persistence.PostLoad;
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
@@ -13,29 +12,25 @@ import javax.persistence.PreUpdate;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
 
 import com.github.emailtohl.lib.event.CreateEntityEvent;
 import com.github.emailtohl.lib.event.DeleteEntityEvent;
 import com.github.emailtohl.lib.event.UpdateEntityEvent;
 
 /**
- * 创建日期、修改日期处理
- * 
+ * 用在实体类的@EntityListeners注解中
+ * 若注入了Spring的ApplicationEventPublisher则可将实体CRUD事件发布到Spring上下文中
  * @author HeLei
  */
-@Component
 public class EntityListener {
 	private static final Logger LOG = LogManager.getLogger();
-	private static ApplicationEventPublisher EVENT_PUBLISHER;
-	@Autowired
-	private volatile ApplicationEventPublisher publisher;
+	private static ApplicationEventPublisher Event_Publisher;
 	
-	@PostConstruct
-	public void init() {
-		EVENT_PUBLISHER = publisher;
+	public EntityListener() {}
+	
+	public EntityListener(ApplicationEventPublisher publisher) {
+		Event_Publisher = publisher;
 	}
 
 	/**
@@ -67,18 +62,18 @@ public class EntityListener {
 	@PostPersist
 	void afterInsertTrigger(EntityBase entity) {
 		LOG.debug("entity inserted into database.");
-		if (EVENT_PUBLISHER != null) {
+		if (Event_Publisher != null) {
 			CreateEntityEvent event = new CreateEntityEvent(entity);
-			EVENT_PUBLISHER.publishEvent(event);
+			Event_Publisher.publishEvent(event);
 		}
 	}
 
 	@PostUpdate
 	void afterUpdateTrigger(EntityBase entity) {
 		LOG.debug("entity just updated in the database.");
-		if (EVENT_PUBLISHER != null) {
+		if (Event_Publisher != null) {
 			UpdateEntityEvent event = new UpdateEntityEvent(entity);
-			EVENT_PUBLISHER.publishEvent(event);
+			Event_Publisher.publishEvent(event);
 		}
 	}
 
@@ -90,9 +85,9 @@ public class EntityListener {
 	@PostRemove
 	void afterDeleteTrigger(EntityBase entity) {
 		LOG.debug("entity about deleted from database.");
-		if (EVENT_PUBLISHER != null) {
+		if (Event_Publisher != null) {
 			DeleteEntityEvent event = new DeleteEntityEvent(entity);
-			EVENT_PUBLISHER.publishEvent(event);
+			Event_Publisher.publishEvent(event);
 		}
 	}
 	
