@@ -67,6 +67,24 @@ public class StandardServiceTest extends TestEnvironment {
 		assertEquals("456", f.getE().iterator().next());
 	}
 	
+	@Test
+	public void testWildcardStringProperty() {
+		Foo f = new Foo();
+		Bar b = new Bar();
+		b.foo = f;
+		f.bar = b;
+		f.setA(1);
+		f.setB("  123   ");
+		f.setC(null);
+		f.getE().add(" 456   ");
+		f.setF(new Date());
+		f.setH(new Foo());
+		itemTestService.wildcardStringProperty(f);
+		
+		assertEquals("123%", f.getB());
+		assertEquals("456%", f.getE().iterator().next());
+	}
+	
 }
 
 class Foo {

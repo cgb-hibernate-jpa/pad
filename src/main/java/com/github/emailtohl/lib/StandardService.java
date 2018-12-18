@@ -242,4 +242,76 @@ public abstract class StandardService<E, ID extends Serializable> {
 		}
 		return new Runner().exec(o);
 	}
+	
+	/**
+	 * 对JavaBean的字符串属性补齐右通配符，主要用于查询时
+	 * 
+	 * @param o 传入参数对象
+	 * @return 因为字符串的不变性（形参不会被方法内部修改），所以需要返回修改后的值
+	 * 若是字符串，则返回补全通配符后的字符串，否则原样返回
+	 */
+	public Object wildcardStringProperty(Object o) {
+		class Runner {
+			// 跟踪是否使用过，防止循环引用
+			Set<Object> used = new HashSet<>();
+			Object exec(Object o) {
+				if (o == null) {
+					return o;
+				}
+				if (used.contains(o)) {
+					return o;
+				}
+				used.add(o);
+				if (o instanceof String && hasText((String) o)) {
+					return ((String) o).trim() + '%';
+				}
+				boolean b = o instanceof Number || o instanceof Enum || o instanceof Character || o instanceof Boolean
+						|| o instanceof Date || o instanceof Calendar || o instanceof Timestamp || o instanceof TimeZone
+						|| o instanceof TemporalAmount || o instanceof Temporal;
+				if (b) {
+					return o;
+				}
+				if (o instanceof Collection) {
+					@SuppressWarnings("unchecked")
+					Collection<Object> c = (Collection<Object>) o;
+					List<Object> temp = c.stream().map(this::exec).collect(Collectors.toList());
+					c.clear();
+					temp.forEach(i -> {
+						c.add(i);
+					});
+					return o;
+				}
+				if (o instanceof Map) {
+					@SuppressWarnings("unchecked")
+					Map<Object, Object> m = (Map<Object, Object>) o;
+					m = m.entrySet().stream().map(e -> {
+						e.setValue(exec(e.getValue()));
+						return e;
+					}).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+					return o;
+				}
+				try {
+					for (PropertyDescriptor pd : Introspector.getBeanInfo(o.getClass(), Object.class)
+							.getPropertyDescriptors()) {
+						Method getter = pd.getReadMethod(), setter = pd.getWriteMethod();
+						if (getter == null || setter == null) {
+							continue;
+						}
+						getter.setAccessible(true);
+						Object value = getter.invoke(o, new Object[] {});
+						if (value == null) {
+							continue;
+						}
+						setter.setAccessible(true);
+						setter.invoke(o, exec(value));
+					}
+				} catch (IntrospectionException | IllegalAccessException | IllegalArgumentException
+						| InvocationTargetException e1) {
+					LOG.catching(e1);
+				}
+				return o;
+			}
+		}
+		return new Runner().exec(o);
+	}
 }
