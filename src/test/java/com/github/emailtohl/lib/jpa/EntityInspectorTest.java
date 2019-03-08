@@ -379,10 +379,9 @@ public class EntityInspectorTest {
 			return false;
 	}
 	
-	@SuppressWarnings({"unchecked", "unused"})
+	@SuppressWarnings({"unchecked"})
 	@Test
 	public void testInjectField() throws IllegalArgumentException, IllegalAccessException {
-		
 		class Foo {
 			short s1;
 			Short s2 = new Short((short) 0);

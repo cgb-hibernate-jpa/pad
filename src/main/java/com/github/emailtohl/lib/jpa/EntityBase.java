@@ -6,6 +6,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.Column;
 import javax.persistence.EntityListeners;
@@ -49,6 +50,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 public abstract class EntityBase implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
 	private static final ObjectMapper om = new ObjectMapper();
+	private final static ConcurrentHashMap<Class<? extends EntityBase>, List<Field>> FIELDS_CACHE = new ConcurrentHashMap<Class<? extends EntityBase>, List<Field>>();
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
 	 * "ID"属性名称
@@ -243,27 +245,38 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	 */
 	@SuppressWarnings("unchecked")
 	private List<Field> getValueTypeFields(Class<? extends EntityBase> clazz) {
-		List<Field> fields = new ArrayList<Field>();
-		Class<? extends EntityBase> clz = clazz;
-		while (!clz.equals(EntityBase.class)) {
-			for (Field f : clz.getDeclaredFields()) {
-				int modifiers = f.getModifiers();
-				// isStrict 内部类连接外围类的引用
-				if (Modifier.isStatic(modifiers) || Modifier.isStrict(modifiers) || Modifier.isFinal(modifiers)) {
-					continue;
-				}
-				if (EntityInspector.isValueType(f.getType())) {
-					f.setAccessible(true);
-					fields.add(f);
-				}
-			}
-			clz = (Class<? extends EntityBase>) clz.getSuperclass();
+		List<Field> fields = FIELDS_CACHE.get(clazz);
+		if (fields != null) {
+			return fields;
 		}
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("{} 's value type fields is:", clazz.getName());
-			for (Field f : fields) {
-				LOG.debug("type: {}, name: {}", f.getType().getName(), f.getName());
+		synchronized (FIELDS_CACHE) {
+			fields = FIELDS_CACHE.get(clazz);
+			if (fields != null) {
+				return fields;
 			}
+			fields = new ArrayList<Field>();
+			Class<? extends EntityBase> clz = clazz;
+			while (!clz.equals(EntityBase.class)) {
+				for (Field f : clz.getDeclaredFields()) {
+					int modifiers = f.getModifiers();
+					// isStrict 内部类连接外围类的引用
+					if (Modifier.isStatic(modifiers) || Modifier.isStrict(modifiers) || Modifier.isFinal(modifiers)) {
+						continue;
+					}
+					if (EntityInspector.isValueType(f.getType())) {
+						f.setAccessible(true);
+						fields.add(f);
+					}
+				}
+				clz = (Class<? extends EntityBase>) clz.getSuperclass();
+			}
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("{} 's value type fields is:", clazz.getName());
+				for (Field f : fields) {
+					LOG.debug("type: {}, field name: {}", f.getType().getName(), f.getName());
+				}
+			}
+			FIELDS_CACHE.put(clazz, fields);
 		}
 		return fields;
 	}
