@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.persistence.Basic;
 import javax.persistence.ElementCollection;
@@ -220,4 +221,15 @@ public class Item extends EntityBase {
         this.images = images;
     }
     // ...
+    @Override
+    public Item clone() {
+    	Item cp = (Item) super.clone();
+    	if (seller != null) {
+    		cp.seller = seller.clone();
+    	}
+    	cp.categories.addAll(categories.stream().map(Category::clone).collect(Collectors.toSet()));
+    	// 避免循环调用，不复制bids的内容
+    	cp.images.addAll(images.stream().map(Image::clone).collect(Collectors.toSet()));
+    	return cp;
+    }
 }

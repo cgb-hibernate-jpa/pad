@@ -90,4 +90,13 @@ public class Category extends EntityBase implements SelfRef {
     }
 
     // ...
+    @Override
+    public Category clone() {
+    	Category cp = (Category) super.clone();
+    	if (parent != null) {
+    		cp.parent = parent.clone();
+    	}
+    	// 不再返回items，避免相互回调
+    	return cp;
+    }
 }

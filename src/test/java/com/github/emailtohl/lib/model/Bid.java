@@ -88,4 +88,16 @@ public class Bid extends EntityBase {
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
+    
+    @Override
+    public Bid clone() {
+    	Bid cp = (Bid) super.clone();
+    	if (item != null) {
+    		cp.item = item.clone();
+    	}
+    	if (bidder != null) {
+    		cp.bidder = bidder.clone();
+    	}
+    	return cp;
+    }
 }

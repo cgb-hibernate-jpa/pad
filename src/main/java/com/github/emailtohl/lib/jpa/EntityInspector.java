@@ -7,11 +7,17 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.security.Timestamp;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -385,7 +391,111 @@ class EntityInspector {
 		Class<?>[] cs = new Class<?>[ls.size()];
 		return ls.toArray(cs);
 	}
-
+	
+	/**
+	 * 判断类型是否值类型，如基本类型、字符、数字、布尔、枚举、时间等。
+	 * 值类型的对象往往具有不变性，在对象的属性分析中，作为基本单位不再向下分析，在orm里，与数据库字段相对应
+	 * @param clazz 被判断的类型
+	 * @return 值类型返回true，否则返回false
+	 */
+	static boolean isValueType(Class<?> clazz) {
+		return clazz.isPrimitive() || String.class.isAssignableFrom(clazz) || Number.class.isAssignableFrom(clazz)
+				|| Enum.class.isAssignableFrom(clazz) || Character.class.isAssignableFrom(clazz)
+				|| Boolean.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz)
+				|| Calendar.class.isAssignableFrom(clazz) || Timestamp.class.isAssignableFrom(clazz)
+				|| Temporal.class.isAssignableFrom(clazz) || TimeZone.class.isAssignableFrom(clazz)
+				|| TemporalAmount.class.isAssignableFrom(clazz);
+	}
+	
+	/**
+	 * 判断对象是否值类型，若实例为null，返回false
+	 * 
+	 * @param o 被判断的类型实例
+	 * @return 值对象返回true，否则返回false
+	 */
+	static boolean isValueTypeInstance(Object o) {
+		if (o == null) {
+			return false;
+		}
+		return isValueType(o.getClass());
+	}
+	
+	/**
+	 * 本方法将对象注入到Field中，Field可以是基本数据类型，但对象应该是其包装类
+	 * 调用前的准备工作：
+	 * 1. 对Field做检查，如Modifier.isStatic(modifiers) || Modifier.isStrict(modifiers) || Modifier.isFinal(modifiers)
+	 * 2. 若Field是私有的，则需设置为可访问f.setAccessible(true);
+	 * 
+	 * 注意：如果注入的对象为null，且Field是基本类型，则设置为其初始值，例如int的初始值为0
+	 * 
+	 * @param field 被注入的Field
+	 * @param entity 该Field所在的对象
+	 * @param value 注入的对象
+	 * @throws IllegalAccessException 如果是私有或final属性，则会抛此异常
+	 * @throws IllegalArgumentException 传入参数不符合要求
+	 */
+	static void injectField(Field field, Object entity, Object value)
+			throws IllegalArgumentException, IllegalAccessException {
+		if (field == null || entity == null)
+			throw new IllegalArgumentException("field或entity为null");
+		Class<?> type = field.getType();
+		// 基本类型有初始值
+		if (value == null) {
+			if (type == int.class) {
+				field.setInt(entity, 0);
+			} else if (type == long.class) {
+				field.setLong(entity, 0L);
+			} else if (type == double.class) {
+				field.setDouble(entity, 0.0d);
+			} else if (type == float.class) {
+				field.setFloat(entity, 0.0f);
+			} else if (type == short.class) {
+				field.setShort(entity, (short) 0);
+			} else if (type == boolean.class) {
+				field.setBoolean(entity, false);
+			} else if (type == byte.class) {
+				field.setByte(entity, (byte) 0);
+			} else if (type == char.class) {
+				field.setChar(entity, (char) 0);
+			} else if (type == void.class) {
+			} else {
+				field.set(entity, null);
+			}
+		} else {
+			// 只复制值类型的对象，如数字、字符串、布尔、枚举、日期等，这些类型的值一般具有不变性，可复制，可映射为数据库字段
+			if (type.isInstance(value)) {
+				field.set(entity, value);
+			} else if (value instanceof Number) {
+				Number num = (Number) value;
+				if (type == int.class) {
+					field.setInt(entity, num.intValue());
+				} else if (type == long.class) {
+					field.setLong(entity, num.longValue());
+				} else if (type == double.class) {
+					field.setDouble(entity, num.doubleValue());
+				} else if (type == float.class) {
+					field.setFloat(entity, num.floatValue());
+				} else if (type == short.class) {
+					field.setShort(entity, num.shortValue());
+				} else if (type == byte.class) {
+					field.setByte(entity, num.byteValue());
+				} else if (type == Byte.class) {
+					field.set(entity, num.byteValue());
+				} else if (type == char.class) {
+					field.setChar(entity, (char) num.intValue());
+				} else if (type == Character.class) {
+					field.set(entity, (char) num.intValue());
+				}
+			} else if (type == boolean.class && value instanceof Boolean) {
+				field.setBoolean(entity, ((Boolean) value).booleanValue());
+			} else if (type == byte.class && value instanceof Byte) {
+				field.setByte(entity, ((Byte) value).byteValue());
+			} else if (type == char.class && value instanceof Character) {
+				field.setChar(entity, ((Character) value).charValue());
+			}
+		}
+	}
+	
 	/**
 	 * 返回关联关系的类型
 	 * 

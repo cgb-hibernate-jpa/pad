@@ -6,8 +6,10 @@ import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 
+import com.github.emailtohl.lib.exception.InnerDataStateException;
+
 @Embeddable
-public class Address implements Serializable {
+public class Address implements Serializable, Cloneable {
 	private static final long serialVersionUID = -3505117115993155305L;
 
 	@NotNull
@@ -51,5 +53,14 @@ public class Address implements Serializable {
 
     public void setCity(String city) {
         this.city = city;
+    }
+    
+    @Override
+    public Address clone() {
+    	try {
+			return (Address) super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new InnerDataStateException(e);
+		}
     }
 }

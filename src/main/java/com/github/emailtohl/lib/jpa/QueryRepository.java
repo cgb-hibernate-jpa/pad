@@ -2,18 +2,12 @@ package com.github.emailtohl.lib.jpa;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.security.Timestamp;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.ElementCollection;
@@ -198,7 +192,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							}
 						}
 					} else {// 如果是值类型
-						if (availableObj(value) || prop.getAnnotation(EmbeddedId.class) != null) {
+						if (EntityInspector.isValueTypeInstance(value)
+								|| prop.getAnnotation(EmbeddedId.class) != null) {
 							Path<?> path = prefix.get(prop.name);
 							if (value instanceof String && prop.getAnnotation(Id.class) == null) {
 								// 模糊查询的“%”由参数提供，这里不自动添加
@@ -240,33 +235,33 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 					Path<?> path = prefix.get(condition.propertyName);
 					switch (condition.operator) {
 					case EQ:
-						if (availableObj(value)) {
+						if (EntityInspector.isValueTypeInstance(value)) {
 							predicates.add(cb.equal(path, value));
 							log(parentPath, condition.propertyName, "=", value);
 						}
 						break;
 					case NEQ:
-						if (availableObj(value)) {
+						if (EntityInspector.isValueTypeInstance(value)) {
 							predicates.add(cb.notEqual(path, value));
 							log(parentPath, condition.propertyName, "<>", value);
 						}
 						break;
 					case LIKE:
-						if (availableObj(value) && value instanceof String) {
+						if (EntityInspector.isValueTypeInstance(value) && value instanceof String) {
 							predicates
 									.add(cb.like(cb.lower((Path<String>) path), ((String) value).trim().toLowerCase()));
 							log(parentPath, condition.propertyName, "LIKE", value);
 						}
 						break;
 					case NOT_LIKE:
-						if (availableObj(value) && value instanceof String) {
+						if (EntityInspector.isValueTypeInstance(value) && value instanceof String) {
 							predicates.add(
 									cb.notLike(cb.lower((Path<String>) path), ((String) value).trim().toLowerCase()));
 							log(parentPath, condition.propertyName, "NOT LIKE", value);
 						}
 						break;
 					case GT:
-						if (availableObj(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.greaterThan(_path, _value));
@@ -274,7 +269,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case GTE:
-						if (availableObj(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.greaterThanOrEqualTo(_path, _value));
@@ -282,7 +277,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case LT:
-						if (availableObj(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.lessThan(_path, _value));
@@ -290,7 +285,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case LTE:
-						if (availableObj(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.lessThanOrEqualTo(_path, _value));
@@ -410,19 +405,6 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	}
 
 	/**
-	 * 在对象中筛选出值对象
-	 * 
-	 * @param o 参数对象
-	 * @return 值对象返回true，否则返回false
-	 */
-	boolean availableObj(Object o) {
-		return o instanceof Serializable && o instanceof String || o instanceof Number || o instanceof Enum
-				|| o instanceof Character || o instanceof Boolean || o instanceof Date || o instanceof Calendar
-				|| o instanceof Timestamp || o instanceof TimeZone || o instanceof TemporalAmount
-				|| o instanceof Temporal;
-	}
-
-	/**
 	 * 判断集合中含的元素是否值对象
 	 * 
 	 * @param collection 集合或者数组
@@ -431,14 +413,14 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	boolean availableCollection(Object collection) {
 		if (collection instanceof Collection && ((Collection<?>) collection).size() > 0) {
 			for (Object o : (Collection<?>) collection) {
-				if (!availableObj(o)) {
+				if (!EntityInspector.isValueTypeInstance(o)) {
 					return false;
 				}
 			}
 			return true;
 		} else if (collection.getClass().isArray() && Array.getLength(collection) > 0) {
 			for (int i = 0; i < Array.getLength(collection); i++) {
-				if (!availableObj(Array.get(collection, i))) {
+				if (!EntityInspector.isValueTypeInstance(Array.get(collection, i))) {
 					return false;
 				}
 			}

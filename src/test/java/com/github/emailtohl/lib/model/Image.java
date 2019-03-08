@@ -10,11 +10,12 @@ import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.github.emailtohl.lib.exception.InnerDataStateException;
 
 @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @Indexed
 @Embeddable
-public class Image implements Serializable {
+public class Image implements Serializable, Cloneable {
 	private static final long serialVersionUID = 7558966940624793980L;
 
 	@NotNull
@@ -100,4 +101,13 @@ public class Image implements Serializable {
         return result;
     }
     // ...
+    
+    @Override
+    public Image clone() {
+    	try {
+			return (Image) super.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new InnerDataStateException(e);
+		}
+    }
 }

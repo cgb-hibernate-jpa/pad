@@ -77,4 +77,14 @@ public class Participator extends EntityBase {
 	}
 
     // ...
+	
+	@Override
+	public Participator clone() {
+		Participator cp = (Participator) super.clone();
+		if (homeAddress != null) {
+			cp.homeAddress = homeAddress.clone();
+		}
+		cp.loginNames.addAll(loginNames);
+		return cp;
+	}
 }

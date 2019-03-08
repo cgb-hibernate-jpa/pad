@@ -14,7 +14,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.persistence.AccessType;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -308,20 +307,6 @@ public class QueryRepositoryTest extends TestEnvironment {
 		em.close();
 	}
 	
-	@Test
-	public void testAvailableObj() {
-		Object o = new Date();
-		assertTrue(itemRepo.availableObj(o));
-		o = 1;
-		assertTrue(itemRepo.availableObj(o));
-		o = true;
-		assertTrue(itemRepo.availableObj(o));
-		o = AccessType.FIELD;
-		assertTrue(itemRepo.availableObj(o));
-		o = "HELLO WORLD";
-		assertTrue(itemRepo.availableObj(o));
-	}
-
 	@Test
 	public void testAvailableCollection() {
 		Set<String> set = new HashSet<>();

@@ -3,6 +3,11 @@ package com.github.emailtohl.lib;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -29,6 +34,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Pageable;
 
+import com.github.emailtohl.lib.exception.InnerDataStateException;
 import com.github.emailtohl.lib.exception.NotAcceptableException;
 import com.github.emailtohl.lib.jpa.Paging;
 
@@ -193,10 +199,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 				if (o instanceof String) {
 					return ((String) o).trim();
 				}
-				boolean b = o instanceof Number || o instanceof Enum || o instanceof Character || o instanceof Boolean
-						|| o instanceof Date || o instanceof Calendar || o instanceof Timestamp || o instanceof TimeZone
-						|| o instanceof TemporalAmount || o instanceof Temporal;
-				if (b) {
+				if (isValueTypeInstance(o)) {
 					return o;
 				}
 				if (o instanceof Collection) {
@@ -265,10 +268,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 				if (o instanceof String && hasText((String) o)) {
 					return ((String) o).trim() + '%';
 				}
-				boolean b = o instanceof Number || o instanceof Enum || o instanceof Character || o instanceof Boolean
-						|| o instanceof Date || o instanceof Calendar || o instanceof Timestamp || o instanceof TimeZone
-						|| o instanceof TemporalAmount || o instanceof Temporal;
-				if (b) {
+				if (isValueTypeInstance(o)) {
 					return o;
 				}
 				if (o instanceof Collection) {
@@ -313,5 +313,55 @@ public abstract class StandardService<E, ID extends Serializable> {
 			}
 		}
 		return new Runner().exec(o);
+	}
+	
+	/**
+	 * 利用Java自身序列化机制克隆一个对象
+	 * @param o
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	protected <T extends Serializable> T clone(T o) {
+		ObjectInputStream in = null;
+		ObjectOutputStream out = null;
+		try {
+			ByteArrayOutputStream bout = new ByteArrayOutputStream();
+			out = new ObjectOutputStream(bout);
+			out.writeObject(o);
+			in = new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
+			return (T) in.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			LOG.warn("The clone method execution failed", e);
+			throw new InnerDataStateException(e);
+		} finally {
+			if (out != null) {
+				try {
+					out.close();
+					out = null;
+				} catch (IOException e) {
+					LOG.catching(e);
+				}
+			}
+			if (out != null) {
+				try {
+					out.close();
+					out = null;
+				} catch (IOException e) {
+					LOG.catching(e);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 判断对象是否值类型，若实例为null，返回false
+	 * 
+	 * @param o 被判断的类型实例
+	 * @return 值对象返回true，否则返回false
+	 */
+	public boolean isValueTypeInstance(Object o) {
+		return o instanceof String || o instanceof Number || o instanceof Enum || o instanceof Character
+				|| o instanceof Boolean || o instanceof Date || o instanceof Calendar || o instanceof Timestamp
+				|| o instanceof Temporal || o instanceof TimeZone || o instanceof TemporalAmount;
 	}
 }

@@ -1,11 +1,8 @@
 package com.github.emailtohl.lib.jpa;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -211,39 +208,66 @@ public abstract class EntityBase implements Serializable, Cloneable {
         }
 	}
 	
+	/**
+	 * 对实体对象进行浅拷贝，若是值类型的对象，则直接复制引用
+	 * 所谓值类型，如字符串、数字、布尔、枚举、日期等，这些类型的值一般具有不变性，可复制，可映射为数据库字段
+	 */
 	@Override
 	public EntityBase clone() {
-		ObjectInputStream in = null;
-		ObjectOutputStream out = null;
+		Class<? extends EntityBase> clz = this.getClass();
+		EntityBase cp;
 		try {
-			ByteArrayOutputStream bout = new ByteArrayOutputStream();
-			out = new ObjectOutputStream(bout);
-			out.writeObject(this);
-			in = new ObjectInputStream(new ByteArrayInputStream(bout.toByteArray()));
-			return (EntityBase) in.readObject();
-		} catch (IOException | ClassNotFoundException e) {
-			LOG.warn("The clone method execution on BaseEntity failed", e);
+			cp = clz.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			LOG.warn("The clone method execution on EntityBase failed", e);
 			throw new InnerDataStateException(e);
-		} finally {
-			if (out != null) {
-				try {
-					out.close();
-					out = null;
-				} catch (IOException e) {
-					LOG.catching(e);
-				}
-			}
-			if (out != null) {
-				try {
-					out.close();
-					out = null;
-				} catch (IOException e) {
-					LOG.catching(e);
-				}
+		}
+		cp.id = id;
+		cp.createDate = createDate;
+		cp.modifyDate = modifyDate;
+		cp.version = version;
+		for (Field f : getValueTypeFields(clz)) {
+			try {
+				EntityInspector.injectField(f, cp, f.get(this));
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				LOG.catching(e);
 			}
 		}
+		return cp;
 	}
-
+	
+	/**
+	 * 获取值类型的Fields
+	 * @param clz EntityBase的子类
+	 * @return 值类型的Fields
+	 */
+	@SuppressWarnings("unchecked")
+	private List<Field> getValueTypeFields(Class<? extends EntityBase> clazz) {
+		List<Field> fields = new ArrayList<Field>();
+		Class<? extends EntityBase> clz = clazz;
+		while (!clz.equals(EntityBase.class)) {
+			for (Field f : clz.getDeclaredFields()) {
+				int modifiers = f.getModifiers();
+				// isStrict 内部类连接外围类的引用
+				if (Modifier.isStatic(modifiers) || Modifier.isStrict(modifiers) || Modifier.isFinal(modifiers)) {
+					continue;
+				}
+				if (EntityInspector.isValueType(f.getType())) {
+					f.setAccessible(true);
+					fields.add(f);
+				}
+			}
+			clz = (Class<? extends EntityBase>) clz.getSuperclass();
+		}
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("{} 's value type fields is:", clazz.getName());
+			for (Field f : fields) {
+				LOG.debug("type: {}, name: {}", f.getType().getName(), f.getName());
+			}
+		}
+		return fields;
+	}
+	
 	/**
 	 * Spring 的BeanUtils.copyProperties方法在复制时需要指明忽略什么属性
 	 * 而本类在实体复制时往往需要忽略id，createDate，modifyDate，version的属性，因为他们是提供给JPA提供程序使用

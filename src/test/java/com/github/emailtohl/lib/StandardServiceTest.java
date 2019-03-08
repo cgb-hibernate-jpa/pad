@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -85,9 +86,27 @@ public class StandardServiceTest extends TestEnvironment {
 		assertEquals("456%", f.getE().iterator().next());
 	}
 	
+	@Test
+	public void testClone() {
+		Foo f = new Foo();
+		Bar b = new Bar();
+		b.foo = f;
+		f.bar = b;
+		f.setA(1);
+		f.setB("  123   ");
+		f.setC(null);
+		f.getE().add(" 456   ");
+		f.setF(new Date());
+		f.setH(new Foo());
+		
+		Bar copy = itemTestService.clone(b);
+		assertEquals(copy.foo.a, b.foo.a);
+	}
+	
 }
 
-class Foo {
+class Foo implements Serializable {
+	private static final long serialVersionUID = -209239358724280869L;
 	int a;
 	String b;
 	String c;
@@ -147,7 +166,8 @@ class Foo {
 	}
 }
 
-class Bar {
+class Bar implements Serializable {
+	private static final long serialVersionUID = 8935792912828539080L;
 	Foo foo;
 }
 
