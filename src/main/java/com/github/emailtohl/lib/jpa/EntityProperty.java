@@ -56,14 +56,15 @@ class EntityProperty {
 			this.propertyDescriptor = propertyDescriptor;
 			this.name = propertyDescriptor.getName();
 			this.field = null;
-			accessType = AccessType.PROPERTY;
+			this.getter.setAccessible(true);
+			this.accessType = AccessType.PROPERTY;
 		} else if (field != null) {
 			field.setAccessible(true);
 			this.field = field;
 			this.name = field.getName();
 			this.propertyDescriptor = null;
 			this.getter = null;
-			accessType = AccessType.FIELD;
+			this.accessType = AccessType.FIELD;
 		} else {
 			throw new IllegalArgumentException("PropertyDescriptor and field cannot all be null");
 		}
@@ -79,6 +80,7 @@ class EntityProperty {
 			if (AccessType.PROPERTY == accessType) {
 				return getter.invoke(entity, args);
 			} else {
+				assert AccessType.FIELD == accessType;
 				return field.get(entity);
 			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -93,6 +95,7 @@ class EntityProperty {
 		if (AccessType.PROPERTY == accessType) {
 			return propertyDescriptor.getPropertyType();
 		} else {
+			assert AccessType.FIELD == accessType;
 			return field.getType();
 		}
 	}
@@ -105,6 +108,7 @@ class EntityProperty {
 		if (AccessType.PROPERTY == accessType) {
 			return getter.getAnnotation(annotationClass);
 		} else {
+			assert AccessType.FIELD == accessType;
 			return field.getAnnotation(annotationClass);
 		}
 	}
@@ -117,6 +121,7 @@ class EntityProperty {
 		if (AccessType.PROPERTY == accessType) {
 			return EntityInspector.getGenericClass(propertyDescriptor);
 		} else {
+			assert AccessType.FIELD == accessType;
 			return EntityInspector.getGenericClass(field);
 		}
 	}

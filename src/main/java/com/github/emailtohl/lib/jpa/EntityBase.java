@@ -211,7 +211,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	}
 	
 	/**
-	 * 对实体对象进行浅拷贝，若是值类型的对象，则直接复制引用
+	 * 对实体对象进行浅拷贝，若是值类型的Field则复制，否则均忽略
 	 * 所谓值类型，如字符串、数字、布尔、枚举、日期等，这些类型的值一般具有不变性，可复制，可映射为数据库字段
 	 */
 	@Override

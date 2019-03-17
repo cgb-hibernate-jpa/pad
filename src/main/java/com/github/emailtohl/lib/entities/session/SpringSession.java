@@ -11,7 +11,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.github.emailtohl.lib.jpa.InitialValueAsCondition;
+import com.github.emailtohl.lib.jpa.ZeroCondition;
 
 @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" })
 @Entity
@@ -63,7 +63,7 @@ public class SpringSession {
 		this.lastAccessTime = lastAccessTime;
 	}
 
-	@InitialValueAsCondition
+	@ZeroCondition
 	@Column(name = "MAX_INACTIVE_INTERVAL", nullable = true)
 	public int getMaxInactiveInterval() {
 		return maxInactiveInterval;

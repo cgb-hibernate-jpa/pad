@@ -73,7 +73,8 @@ class Condition {
 			this.operator = anno.operator();
 			this.propertyDescriptor = propertyDescriptor;
 			this.field = null;
-			accessType = AccessType.PROPERTY;
+			this.getter.setAccessible(true);
+			this.accessType = AccessType.PROPERTY;
 		} else if (field != null) {
 			field.setAccessible(true);
 			Instruction anno = field.getAnnotation(Instruction.class);
@@ -87,7 +88,7 @@ class Condition {
 			this.field = field;
 			this.propertyDescriptor = null;
 			this.getter = null;
-			accessType = AccessType.FIELD;
+			this.accessType = AccessType.FIELD;
 		} else {
 			throw new IllegalArgumentException("PropertyDescriptor and field cannot all be null");
 		}
@@ -102,9 +103,9 @@ class Condition {
 	Object getValue(Object entity) {
 		try {
 			if (AccessType.PROPERTY == accessType) {
-				getter.setAccessible(true);
 				return getter.invoke(entity, args);
 			} else {
+				assert AccessType.FIELD == accessType;
 				return field.get(entity);
 			}
 		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
@@ -119,6 +120,7 @@ class Condition {
 		if (AccessType.PROPERTY == accessType) {
 			return propertyDescriptor.getPropertyType();
 		} else {
+			assert AccessType.FIELD == accessType;
 			return field.getType();
 		}
 	}
@@ -131,6 +133,7 @@ class Condition {
 		if (AccessType.PROPERTY == accessType) {
 			return getter.getAnnotation(annotationClass);
 		} else {
+			assert AccessType.FIELD == accessType;
 			return field.getAnnotation(annotationClass);
 		}
 	}
@@ -143,6 +146,7 @@ class Condition {
 		if (AccessType.PROPERTY == accessType) {
 			return propertyDescriptor.getName();
 		} else {
+			assert AccessType.FIELD == accessType;
 			return field.getName();
 		}
 	}

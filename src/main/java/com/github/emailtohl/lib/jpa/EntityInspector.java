@@ -172,8 +172,9 @@ class EntityInspector {
 	}
 
 	/**
-	 * 查找实体的边界范围。因为继承关系，有两种情况需要考虑： 1. 一个未标注@Entity的类，它继承于标注了@Entity的类。 2.
-	 * 标注了@Entity的类，但它的父类存在既不含@Entity也不含@MappedSuperclass的类
+	 * 查找实体的边界范围。因为继承关系，有两种情况需要考虑：
+	 * 1. 一个未标注@Entity的类，它继承于标注了@Entity的类。
+	 * 2. 标注了@Entity的类，但它的父类存在既不含@Entity也不含@MappedSuperclass的类
 	 * 所以对于那些不能映射到数据库表字段的属性，均需要排除。
 	 * 
 	 * @param clazz 被标注了Entity、Embeddable的实体类
@@ -408,19 +409,6 @@ class EntityInspector {
 	}
 	
 	/**
-	 * 判断对象是否值类型，若实例为null，返回false
-	 * 
-	 * @param o 被判断的类型实例
-	 * @return 值对象返回true，否则返回false
-	 */
-	static boolean isValueTypeInstance(Object o) {
-		if (o == null) {
-			return false;
-		}
-		return isValueType(o.getClass());
-	}
-	
-	/**
 	 * 本方法将对象注入到Field中，Field可以是基本数据类型，但对象应该是其包装类
 	 * 调用前的准备工作：
 	 * 1. 对Field做检查，如Modifier.isStatic(modifiers) || Modifier.isStrict(modifiers) || Modifier.isFinal(modifiers)
@@ -437,7 +425,7 @@ class EntityInspector {
 	static void injectField(Field field, Object entity, Object value)
 			throws IllegalArgumentException, IllegalAccessException {
 		if (field == null || entity == null)
-			throw new IllegalArgumentException("field或entity为null");
+			throw new IllegalArgumentException("Field or entity is null");
 		Class<?> type = field.getType();
 		// 基本类型有初始值
 		if (value == null) {

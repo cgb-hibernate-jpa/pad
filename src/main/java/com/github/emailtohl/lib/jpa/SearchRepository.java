@@ -56,11 +56,11 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 		private final Set<String> fields = new HashSet<String>();
 
 		String[] getOnfields() {
-			setFields(entityClass, fields, "");
+			setFields(entityClass, "");
 			return fields.toArray(new String[fields.size()]);
 		}
 
-		private void setFields(Class<?> clazz, Set<String> fields, String parentPath) {
+		private void setFields(Class<?> clazz, String parentPath) {
 			if (used.contains(clazz)) {
 				return;
 			}
@@ -80,13 +80,13 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 							Class<?>[] genericClasses = prop.getGenericClass();
 							if (genericClasses.length != 1) {
 								throw new IllegalArgumentException(String.format(
-										"The entity %s type of the collection is unknown" + embclz.getSimpleName()));
+										"The entity %s type of the collection is unknown", embclz.getSimpleName()));
 							} else {
 								embclz = genericClasses[0];
 							}
 						}
 					}
-					setFields(embclz, fields, parentPath.isEmpty() ? prop.name : parentPath + '.' + prop.name);
+					setFields(embclz, parentPath.isEmpty() ? prop.name : parentPath + '.' + prop.name);
 				} else if (fieldAnno != null) {
 					String field = (parentPath.isEmpty() ? "" : parentPath + '.')
 							+ (fieldAnno.name().isEmpty() ? prop.name : fieldAnno.name());
@@ -94,7 +94,6 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 				}
 			}
 		}
-
 	}
 
 	protected FullTextQuery getLuceneQuery(String query) {
@@ -106,7 +105,7 @@ public abstract class SearchRepository<E, ID extends Serializable> extends Query
 						fem.createIndexer().startAndWait();
 						IS_INIT = true;
 					} catch (InterruptedException e) {
-						LOG.error(entityClass + "init failed", e);
+						LOG.error(entityClass + " init failed", e);
 						throw new InnerDataStateException(e);
 					}
 				}

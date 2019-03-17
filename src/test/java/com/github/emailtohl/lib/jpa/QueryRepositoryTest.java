@@ -310,34 +310,34 @@ public class QueryRepositoryTest extends TestEnvironment {
 	@Test
 	public void testAvailableCollection() {
 		Set<String> set = new HashSet<>();
-		assertFalse(itemRepo.availableCollection(set));
+		assertFalse(itemRepo.isValueTypeCollection(set));
 		set.add("HELLO");
-		assertTrue(itemRepo.availableCollection(set));
+		assertTrue(itemRepo.isValueTypeCollection(set));
 		int[] arr = new int[0];
-		assertFalse(itemRepo.availableCollection(arr));
+		assertFalse(itemRepo.isValueTypeCollection(arr));
 		arr = new int[1];
-		assertTrue(itemRepo.availableCollection(arr));
+		assertTrue(itemRepo.isValueTypeCollection(arr));
 	}
 	
 	@Test
 	public void testIgnorePrimitive() {
-		assertFalse(itemRepo.ignorePrimitive(Object.class, new Object()));
-		assertFalse(itemRepo.ignorePrimitive(int.class, 1));
-		assertTrue(itemRepo.ignorePrimitive(int.class, 0));
-		assertFalse(itemRepo.ignorePrimitive(long.class, 1L));
-		assertTrue(itemRepo.ignorePrimitive(long.class, 0L));
-		assertFalse(itemRepo.ignorePrimitive(double.class, 1.1));
-		assertTrue(itemRepo.ignorePrimitive(double.class, 0.0));
-		assertFalse(itemRepo.ignorePrimitive(float.class, 1.1f));
-		assertTrue(itemRepo.ignorePrimitive(float.class, 0.0f));
-		assertFalse(itemRepo.ignorePrimitive(short.class, (short) 1));
-		assertTrue(itemRepo.ignorePrimitive(short.class, (short) 0));
-		assertFalse(itemRepo.ignorePrimitive(boolean.class, true));
-		assertTrue(itemRepo.ignorePrimitive(boolean.class, false));
-		assertFalse(itemRepo.ignorePrimitive(byte.class, (byte) 1));
-		assertTrue(itemRepo.ignorePrimitive(byte.class, (byte) 0));
-		assertFalse(itemRepo.ignorePrimitive(char.class, 'A'));
-		assertTrue(itemRepo.ignorePrimitive(char.class, (char) 0));
+		assertFalse(itemRepo.isZeroValue(Object.class, new Object()));
+		assertFalse(itemRepo.isZeroValue(int.class, 1));
+		assertTrue(itemRepo.isZeroValue(int.class, 0));
+		assertFalse(itemRepo.isZeroValue(long.class, 1L));
+		assertTrue(itemRepo.isZeroValue(long.class, 0L));
+		assertFalse(itemRepo.isZeroValue(double.class, 1.1));
+		assertTrue(itemRepo.isZeroValue(double.class, 0.0));
+		assertFalse(itemRepo.isZeroValue(float.class, 1.1f));
+		assertTrue(itemRepo.isZeroValue(float.class, 0.0f));
+		assertFalse(itemRepo.isZeroValue(short.class, (short) 1));
+		assertTrue(itemRepo.isZeroValue(short.class, (short) 0));
+		assertFalse(itemRepo.isZeroValue(boolean.class, true));
+		assertTrue(itemRepo.isZeroValue(boolean.class, false));
+		assertFalse(itemRepo.isZeroValue(byte.class, (byte) 1));
+		assertTrue(itemRepo.isZeroValue(byte.class, (byte) 0));
+		assertFalse(itemRepo.isZeroValue(char.class, 'A'));
+		assertTrue(itemRepo.isZeroValue(char.class, (char) 0));
 	}
 	
 	@Test

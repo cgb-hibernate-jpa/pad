@@ -158,24 +158,23 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 					}
 					// 若没有指明初始化值也作为查询条件的话，那么默认该忽略
 					// 接着判断是否基本类型，若是基本类型且值是初始化值，那么就不作为查询条件
-					if (prop.getAnnotation(InitialValueAsCondition.class) == null
-							&& ignorePrimitive(prop.getType(), value)) {
+					if (prop.getAnnotation(ZeroCondition.class) == null && isZeroValue(prop.getType(), value)) {
 						continue;
 					}
 					// 先区分是否集合属性
 					if (value instanceof Collection) {// 如果是集合类型
-						ElementCollection elementCollection = prop.getAnnotation(ElementCollection.class);
-						OneToMany oneToMany = prop.getAnnotation(OneToMany.class);
-						ManyToMany manyToMany = prop.getAnnotation(ManyToMany.class);
 						Collection<Object> values = (Collection<Object>) value;
 						if (values.isEmpty()) {
 							continue;
 						}
+						ElementCollection elementCollection = prop.getAnnotation(ElementCollection.class);
+						OneToMany oneToMany = prop.getAnnotation(OneToMany.class);
+						ManyToMany manyToMany = prop.getAnnotation(ManyToMany.class);
 						// 对集合处理的JPQL样例：SELECT c FROM Category c WHERE :item MEMBER OF c.items
 						// items是Category的集合属性，查询Category时，谓词条件是：参数item是Category#items的一员，可用isMember:
 						// cb.isMember(v, path)
 						// 此处查询参数v只考虑值类型，如果v是实体类型的话，在查询前，还需先将其加载为持久化状态，不仅复杂而且影响性能
-						if (elementCollection != null && availableCollection(values)) {
+						if (elementCollection != null && isValueTypeCollection(values)) {
 							Path<Collection<Object>> path = prefix.get(prop.name);
 							for (Object v : values) {
 								predicates.add(cb.isMember(v, path));
@@ -183,18 +182,18 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 							}
 						} else if (prefix == root// 下面考虑v是实体类型的情况，这里采用左外连接来查询，前提条件是Join只在root层有效，用==进行严格判断
 								&& (elementCollection != null || oneToMany != null || manyToMany != null)) {
-							// 在对多的关系中，连接查询时有个细节，若使用默认的INNER
-							// JOIN，即便WHERE后没有谓词，在生成SQL时，也会使用ON连接，这会让结果过滤掉未关联的项
+							// 连接查询默认使用INNER JOIN，这会过滤掉两表未关联的项
 							// 所以在这种对多的关系中，一定要用左连接：SELECT c FROM Category c LEFT JOIN c.items WHERE ……
 							Join<?, Collection> join = root.join(prop.name, JoinType.LEFT);
 							for (Object component : values) {
 								exec(component, join, prop.name);
 							}
 						}
-					} else {// 如果是值类型
-						if (EntityInspector.isValueTypeInstance(value)
-								|| prop.getAnnotation(EmbeddedId.class) != null) {
+					} else {// 若不是集合
+						if (EntityInspector.isValueType(prop.getType())
+								|| prop.getAnnotation(EmbeddedId.class) != null) {// 如果是值类型或id
 							Path<?> path = prefix.get(prop.name);
+							// 不是id的字符串类型，就用“LIKE”
 							if (value instanceof String && prop.getAnnotation(Id.class) == null) {
 								// 模糊查询的“%”由参数提供，这里不自动添加
 								String _value = ((String) value).trim().toLowerCase();
@@ -228,40 +227,40 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 					}
 					// 若没有指明初始化值也作为查询条件的话，那么默认该忽略
 					// 接着判断是否基本类型，若是基本类型且值是初始化值，那么就不作为查询条件
-					if (condition.getAnnotation(InitialValueAsCondition.class) == null
-							&& ignorePrimitive(condition.getType(), value)) {
+					if (condition.getAnnotation(ZeroCondition.class) == null
+							&& isZeroValue(condition.getType(), value)) {
 						continue;
 					}
 					Path<?> path = prefix.get(condition.propertyName);
 					switch (condition.operator) {
 					case EQ:
-						if (EntityInspector.isValueTypeInstance(value)) {
+						if (EntityInspector.isValueType(condition.getType())) {
 							predicates.add(cb.equal(path, value));
 							log(parentPath, condition.propertyName, "=", value);
 						}
 						break;
 					case NEQ:
-						if (EntityInspector.isValueTypeInstance(value)) {
+						if (EntityInspector.isValueType(condition.getType())) {
 							predicates.add(cb.notEqual(path, value));
 							log(parentPath, condition.propertyName, "<>", value);
 						}
 						break;
 					case LIKE:
-						if (EntityInspector.isValueTypeInstance(value) && value instanceof String) {
+						if (EntityInspector.isValueType(condition.getType()) && value instanceof String) {
 							predicates
 									.add(cb.like(cb.lower((Path<String>) path), ((String) value).trim().toLowerCase()));
 							log(parentPath, condition.propertyName, "LIKE", value);
 						}
 						break;
 					case NOT_LIKE:
-						if (EntityInspector.isValueTypeInstance(value) && value instanceof String) {
+						if (EntityInspector.isValueType(condition.getType()) && value instanceof String) {
 							predicates.add(
 									cb.notLike(cb.lower((Path<String>) path), ((String) value).trim().toLowerCase()));
 							log(parentPath, condition.propertyName, "NOT LIKE", value);
 						}
 						break;
 					case GT:
-						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueType(condition.getType()) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.greaterThan(_path, _value));
@@ -269,7 +268,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case GTE:
-						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueType(condition.getType()) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.greaterThanOrEqualTo(_path, _value));
@@ -277,7 +276,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case LT:
-						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueType(condition.getType()) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.lessThan(_path, _value));
@@ -285,7 +284,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						}
 						break;
 					case LTE:
-						if (EntityInspector.isValueTypeInstance(value) && value instanceof Comparable) {
+						if (EntityInspector.isValueType(condition.getType()) && value instanceof Comparable) {
 							Comparable _value = (Comparable) value;
 							Path<Comparable> _path = (Path<Comparable>) path;
 							predicates.add(cb.lessThanOrEqualTo(_path, _value));
@@ -294,7 +293,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 						break;
 					case IN:
 						// 这里只考虑值类型，若是实体类型还需要先加载其持久态实例
-						if (availableCollection(value)) {
+						if (isValueTypeCollection(value)) {
 							In<Object> in = cb.in(path);
 							Collection<?> values = toCollection(value);
 							for (Object v : values) {
@@ -410,17 +409,18 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	 * @param collection 集合或者数组
 	 * @return 若集合或数组中的元素是值对象，则返回true，否则为false
 	 */
-	boolean availableCollection(Object collection) {
+	boolean isValueTypeCollection(Object collection) {
 		if (collection instanceof Collection && ((Collection<?>) collection).size() > 0) {
 			for (Object o : (Collection<?>) collection) {
-				if (!EntityInspector.isValueTypeInstance(o)) {
+				if (o == null || !EntityInspector.isValueType(o.getClass())) {
 					return false;
 				}
 			}
 			return true;
 		} else if (collection.getClass().isArray() && Array.getLength(collection) > 0) {
 			for (int i = 0; i < Array.getLength(collection); i++) {
-				if (!EntityInspector.isValueTypeInstance(Array.get(collection, i))) {
+				Object o = Array.get(collection, i);
+				if (o == null || !EntityInspector.isValueType(o.getClass())) {
 					return false;
 				}
 			}
@@ -431,13 +431,13 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	}
 
 	/**
-	 * 若是基本类型，则判断是否忽略
+	 * 判断是否基本类型的零值
 	 * 
 	 * @param type class类型
 	 * @param value 值
 	 * @return 若class类型为基本类型，且值是初始值，则返回true，否则为false
 	 */
-	boolean ignorePrimitive(Class<?> type, Object value) {
+	boolean isZeroValue(Class<?> type, Object value) {
 		// 若本身不是基本类型，那么返回false表示循环中不执行“continue”
 		if (!PRIMITIVES.contains(type)) {
 			return false;
