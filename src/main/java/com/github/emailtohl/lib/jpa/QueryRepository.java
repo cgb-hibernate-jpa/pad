@@ -39,8 +39,8 @@ import org.springframework.data.jpa.repository.query.QueryUtils;
  */
 public abstract class QueryRepository<E, ID extends Serializable> extends EntityRepository<E, ID>
 		implements QueryInterface<E, ID> {
-	private static final ConcurrentHashMap<Class<?>, Set<EntityProperty>> PROP_CACHE = new ConcurrentHashMap<Class<?>, Set<EntityProperty>>();
-	private static final ConcurrentHashMap<Class<?>, Set<Condition>> CONDITION_CACHE = new ConcurrentHashMap<Class<?>, Set<Condition>>();
+	private static final ConcurrentHashMap<Class<?>, EntityProperty[]> PROP_CACHE = new ConcurrentHashMap<Class<?>, EntityProperty[]>();
+	private static final ConcurrentHashMap<Class<?>, Condition[]> CONDITION_CACHE = new ConcurrentHashMap<Class<?>, Condition[]>();
 	private static final Set<Class<?>> PRIMITIVES = new HashSet<Class<?>>(Arrays.asList(int.class, long.class,
 			double.class, float.class, short.class, boolean.class, byte.class, char.class));
 
@@ -365,8 +365,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	 * @param clazz 从该class中分析出实体属性
 	 * @return 实体属性集合
 	 */
-	Set<EntityProperty> getEntityProperties(Class<?> clazz) {
-		Set<EntityProperty> properties = PROP_CACHE.get(clazz);
+	EntityProperty[] getEntityProperties(Class<?> clazz) {
+		EntityProperty[] properties = PROP_CACHE.get(clazz);
 		if (properties != null) {
 			return properties;
 		}
@@ -375,7 +375,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 			if (properties != null) {
 				return properties;
 			}
-			properties = EntityInspector.getEntityProperty(clazz);
+			Set<EntityProperty> sproperties = EntityInspector.getEntityProperty(clazz);
+			properties = sproperties.toArray(new EntityProperty[sproperties.size()]);
 			PROP_CACHE.put(clazz, properties);
 		}
 		return properties;
@@ -387,8 +388,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	 * @param clazz 从该class中分析出自定义条件比较的信息
 	 * @return 条件比较信息的集合
 	 */
-	Set<Condition> getConditions(Class<?> clazz) {
-		Set<Condition> conditions = CONDITION_CACHE.get(clazz);
+	Condition[] getConditions(Class<?> clazz) {
+		Condition[] conditions = CONDITION_CACHE.get(clazz);
 		if (conditions != null) {
 			return conditions;
 		}
@@ -397,7 +398,8 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 			if (conditions != null) {
 				return conditions;
 			}
-			conditions = EntityInspector.getConditions(clazz);
+			Set<Condition> sconditions = EntityInspector.getConditions(clazz);
+			conditions = sconditions.toArray(new Condition[sconditions.size()]);
 			CONDITION_CACHE.put(clazz, conditions);
 		}
 		return conditions;

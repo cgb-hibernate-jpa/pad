@@ -50,7 +50,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 public abstract class EntityBase implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
 	private static final ObjectMapper om = new ObjectMapper();
-	private final static ConcurrentHashMap<Class<? extends EntityBase>, List<Field>> FIELDS_CACHE = new ConcurrentHashMap<Class<? extends EntityBase>, List<Field>>();
+	private final static ConcurrentHashMap<Class<? extends EntityBase>, Field[]> FIELDS_CACHE = new ConcurrentHashMap<Class<? extends EntityBase>, Field[]>();
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
 	 * "ID"属性名称
@@ -244,8 +244,8 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	 * @return 值类型的Fields
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Field> getValueTypeFields(Class<? extends EntityBase> clazz) {
-		List<Field> fields = FIELDS_CACHE.get(clazz);
+	private Field[] getValueTypeFields(Class<? extends EntityBase> clazz) {
+		Field[] fields = FIELDS_CACHE.get(clazz);
 		if (fields != null) {
 			return fields;
 		}
@@ -254,7 +254,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 			if (fields != null) {
 				return fields;
 			}
-			fields = new ArrayList<Field>();
+			List<Field> arrFields = new ArrayList<Field>();
 			Class<? extends EntityBase> clz = clazz;
 			while (!clz.equals(EntityBase.class)) {
 				for (Field f : clz.getDeclaredFields()) {
@@ -265,17 +265,18 @@ public abstract class EntityBase implements Serializable, Cloneable {
 					}
 					if (EntityInspector.isValueType(f.getType())) {
 						f.setAccessible(true);
-						fields.add(f);
+						arrFields.add(f);
 					}
 				}
 				clz = (Class<? extends EntityBase>) clz.getSuperclass();
 			}
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("{} 's value type fields is:", clazz.getName());
-				for (Field f : fields) {
+				for (Field f : arrFields) {
 					LOG.debug("type: {}, field name: {}", f.getType().getName(), f.getName());
 				}
 			}
+			fields = arrFields.toArray(new Field[arrFields.size()]);
 			FIELDS_CACHE.put(clazz, fields);
 		}
 		return fields;
