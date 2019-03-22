@@ -99,9 +99,9 @@ SELECT u FROM User u WHERE 'foo@localhost' MEMBER OF u.loginNames AND '199223888
 
 #### 2.3.2 微调查询
 ##### 2.3.2.1 关于基本类型
-从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.lib.jpa.InitialValueAsCondition注解，如：
+从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.lib.jpa.ZeroCondition注解，如：
 ```java
-@InitialValueAsCondition
+@ZeroCondition
 public int getAge() {
   return age;
 }

@@ -173,9 +173,9 @@ public class TextFileSearch implements AutoCloseable {
 	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public String addIndex(File file) throws IOException {
+	public long addIndex(File file) throws IOException {
 		if (!textFileFilter.accept(file)) {
-			return "";
+			return 0L;
 		}
 		Document doc = getDocument(file);
 		return facade.create(doc);
@@ -188,19 +188,21 @@ public class TextFileSearch implements AutoCloseable {
 	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public String updateIndex(File file) throws IOException {
+	public long updateIndex(File file) throws IOException {
 		if (!textFileFilter.accept(file)) {
-			return "";
+			return 0L;
 		}
 		Document document = getDocument(file);
-		Document old = facade.first(FILE_PATH, file.getPath());
-		String id;
-		if (old == null) {
-			id = facade.create(document);
-		} else {
-			id = facade.update(old.get(LuceneFacade.ID_NAME), document);
+		synchronized (TextFileSearch.class) {
+			Document old = facade.first(FILE_PATH, file.getPath());
+			long id;
+			if (old == null) {
+				id = facade.create(document);
+			} else {
+				id = facade.update(Long.valueOf(old.get(LuceneFacade.ID_NAME)), document);
+			}
+			return id;
 		}
-		return id;
 	}
 
 	/**
@@ -213,7 +215,7 @@ public class TextFileSearch implements AutoCloseable {
 		if (textFileFilter.accept(file)) {
 			Document doc = facade.first(FILE_PATH, file.getPath());
 			if (doc != null) {
-				facade.delete(doc.get(LuceneFacade.ID_NAME));
+				facade.delete(Long.valueOf(doc.get(LuceneFacade.ID_NAME)));
 			}
 		}
 	}

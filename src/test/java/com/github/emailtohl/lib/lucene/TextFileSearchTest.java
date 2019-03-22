@@ -1,10 +1,13 @@
 package com.github.emailtohl.lib.lucene;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -46,7 +49,7 @@ public class TextFileSearchTest {
 		if (!textFile.exists()) {
 			textFile.createNewFile();
 		}
-		FileUtils.write(textFile, text, "UTF-8");
+		FileUtils.write(textFile, text, StandardCharsets.UTF_8);
 
 		// 创建一个内存索引目录
 		directory = new RAMDirectory();
@@ -64,13 +67,17 @@ public class TextFileSearchTest {
 	@Test
 	public void test() throws IOException, InterruptedException {
 		Set<String> result = fs.searchForFilePath(SEARCH_QUERY);
-		result.forEach(s -> logger.debug(s));
+		result.forEach(logger::debug);
 		assertFalse(result.isEmpty());
+		
+		List<Document> docs = fs.search(SEARCH_QUERY);
+		assertEquals(1, docs.size());
 
 		Page<Document> page = fs.search(SEARCH_QUERY, PageRequest.of(0, 5));
 		for (Document d : page.getContent()) {
 			logger.debug(d);
 		}
+		assertEquals(1, page.getNumberOfElements());
 
 		// 测试并发
 		short count = 100;
@@ -80,7 +87,7 @@ public class TextFileSearchTest {
 			exec.submit(() -> {
 				try {
 					FileUtils.writeStringToFile(textFile, r.nextInt(100) + " ", StandardCharsets.UTF_8, true);
-					fs.updateIndex(tempDir);
+					fs.updateIndex(textFile);
 				} catch (IOException e) {
 					e.printStackTrace();
 				} finally {
@@ -92,12 +99,21 @@ public class TextFileSearchTest {
 			exec.submit(() -> {
 				Set<String> r = fs.searchForFilePath("渔樵 浊酒");
 				assertFalse(r.isEmpty());
+				List<Document> _docs = fs.search(SEARCH_QUERY);
+				assertEquals(1, _docs.size());
 			});
 		}
 		latch.await();
+		
+		if (logger.isTraceEnabled()) {
+			logger.trace(FileUtils.readFileToString(textFile, StandardCharsets.UTF_8));
+		}
+		
 		result = fs.searchForFilePath("笑谈");
 		logger.debug(result);
 		assertFalse(result.isEmpty());
-		fs.deleteIndex(tempDir);
+		fs.deleteIndex(textFile);
+		docs = fs.search("笑谈");
+		assertTrue(docs.isEmpty());
 	}
 }

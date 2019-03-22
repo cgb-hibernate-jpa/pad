@@ -317,8 +317,9 @@ public abstract class StandardService<E, ID extends Serializable> {
 	
 	/**
 	 * 利用Java自身序列化机制克隆一个对象
-	 * @param o
-	 * @return
+	 * @param <T> 被克隆的类型，该类型要实现Serializable
+	 * @param o 被克隆的对象
+	 * @return 原对象的克隆
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T extends Serializable> T clone(T o) {

@@ -6,7 +6,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.logging.log4j.LogManager;
@@ -21,7 +20,6 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -34,6 +32,7 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -41,6 +40,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
+
+import com.github.emailtohl.lib.util.SnowflakeIdWorker;
 
 /**
  * <p>对Lucene的IndexWriter和IndexReader进行简易的封装</p>
@@ -51,11 +54,13 @@ import org.apache.lucene.store.RAMDirectory;
  */
 public class LuceneFacade implements AutoCloseable {
 	/** 在IndexWriter中是不能获取到docId的（分段合并会发生变化），所以需要唯一标识一个Document的属性 */
-	public static final String ID_NAME = "UUID";
+	public static final String ID_NAME = "Snowflake_Id";
 	/** Document的属性名，创建时间 */
 	public static final String CREATE_TIME = "CREATE_TIME";
 	/** 索引和查询时使用的分词器 */
 	public final Analyzer analyzer;
+	/** id 生成工具 */
+	public final SnowflakeIdWorker idWorker;
 	/** 日志 */
 	private final Logger LOG = LogManager.getLogger();
 	/** 记录文档有哪些属性，便于查询 */
@@ -75,16 +80,29 @@ public class LuceneFacade implements AutoCloseable {
 	 * 构造LuceneClient
 	 * @param indexPath 指定索引存储地址
 	 * @param analyzer 指定索引和搜索使用的分词器
+	 * @param workerId 工作ID (0~31)
+	 * @param datacenterId 数据中心ID (0~31)
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public LuceneFacade(Directory indexPath, Analyzer analyzer) throws IOException {
+	public LuceneFacade(Directory indexPath, Analyzer analyzer, long workerId, long datacenterId) throws IOException {
 		this.analyzer = analyzer;
 		IndexWriterConfig conf = new IndexWriterConfig(analyzer);
 		// 每一次访问，创建新的索引,第二次访问，删掉原来的创建新的索引
 		conf.setOpenMode(OpenMode.CREATE);
-		writer = new IndexWriter(indexPath, conf);
-		reader = DirectoryReader.open(writer);
-		searcher = new IndexSearcher(reader);
+		this.writer = new IndexWriter(indexPath, conf);
+		this.reader = DirectoryReader.open(writer);
+		this.searcher = new IndexSearcher(reader);
+		this.idWorker = new SnowflakeIdWorker(workerId, datacenterId);
+	}
+	
+	/**
+	 * 构造LuceneClient
+	 * @param indexPath 指定索引存储地址
+	 * @param analyzer 指定索引和搜索使用的分词器
+	 * @throws IOException 来自底层的输入输出异常
+	 */
+	public LuceneFacade(Directory indexPath, Analyzer analyzer) throws IOException {
+		this(indexPath, analyzer, System.currentTimeMillis() & 0b11111, System.currentTimeMillis() & 0b11111);
 	}
 
 	/**
@@ -123,7 +141,7 @@ public class LuceneFacade implements AutoCloseable {
 	 */
 	public void index(List<Document> documents) throws IOException {
 		for (Document doc : documents) {
-			doc.add(new StringField(ID_NAME, UUID.randomUUID().toString(), Store.YES));
+			doc.add(new LongField(ID_NAME, idWorker.nextId(), Store.YES));
 			doc.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 			for (IndexableField field : doc.getFields()) {
 				indexableFieldNames.add(field.name());
@@ -146,9 +164,9 @@ public class LuceneFacade implements AutoCloseable {
 	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public String create(Document document) throws IOException {
-		String id = UUID.randomUUID().toString();
-		document.add(new StringField(ID_NAME, id, Store.YES));
+	public long create(Document document) throws IOException {
+		long id = idWorker.nextId();
+		document.add(new LongField(ID_NAME, id, Store.YES));
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
@@ -167,7 +185,7 @@ public class LuceneFacade implements AutoCloseable {
 	 * @param id ID_NAME Field中的值，能唯一标识这个文档
 	 * @return lucene中的文档，若未查找到，则返回null
 	 */
-	public Document read(String id) {
+	public Document read(long id) {
 		Document doc = null;
 		try {
 			// 若正在执行refreshIndexReader中，那么就在此处等待
@@ -175,7 +193,7 @@ public class LuceneFacade implements AutoCloseable {
 			synchronized (this) {
 				queryCount++;
 			}
-			Query query = new TermQuery(new Term(ID_NAME, id));
+			Query query = NumericRangeQuery.newLongRange(ID_NAME, id, id, true, true);
 			TopDocs docs = searcher.search(query, 1);
 			if (docs.scoreDocs.length == 0) {
 				return null;
@@ -194,7 +212,7 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
-	 * <p>根据字段名和值精确查询第一个文档，一般用于唯一性键值查询</p>
+	 * <p>根据字段名（非id字段）和值精确查询第一个文档，一般用于唯一性键值查询</p>
 	 * <p>这里使用TermQuery进行精确查询，所以需要业务上保证此域的值唯一性</p>
 	 * <p>另外域的类型一般选择StringField，即在索引期间不做分词处理，否则原始值会被分词器处理，如去掉停用词，转为全小写等操作，造成查询失败</p>
 	 * @param fieldName 索引时，建议用StringField存储的字段名
@@ -235,9 +253,9 @@ public class LuceneFacade implements AutoCloseable {
 	 * @return 新增文档ID_NAME Field中的值
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public String update(String id, Document document) throws IOException {
-		String newId = UUID.randomUUID().toString();
-		document.add(new StringField(ID_NAME, newId, Store.YES));
+	public long update(long id, Document document) throws IOException {
+		long newId = idWorker.nextId();
+		document.add(new LongField(ID_NAME, newId, Store.YES));
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
@@ -245,7 +263,11 @@ public class LuceneFacade implements AutoCloseable {
 				debugToken(field.name(), field.stringValue());
 			}
 		}
-		writer.updateDocument(new Term(ID_NAME, id), document);
+//		ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+//		BytesRef bytesRef = new BytesRef(byteBuffer.putLong(0, id).array());
+		BytesRefBuilder brb = new BytesRefBuilder();
+		NumericUtils.longToPrefixCoded(id, 0, brb);
+		writer.updateDocument(new Term(ID_NAME, brb.get()), document);
 		writer.commit();
 		refreshIndexReader();
 		return newId;
@@ -257,8 +279,9 @@ public class LuceneFacade implements AutoCloseable {
 	 * @param id ID_NAME Field中的值，能唯一标识这个文档
 	 * @throws IOException 来自底层的输入输出异常
 	 */
-	public void delete(String id) throws IOException {
-		writer.deleteDocuments(new Term(ID_NAME, id));
+	public void delete(long id) throws IOException {
+		Query query = NumericRangeQuery.newLongRange(ID_NAME, id, id, true, true);
+		writer.deleteDocuments(query);
 		writer.commit();
 		refreshIndexReader();
 	}

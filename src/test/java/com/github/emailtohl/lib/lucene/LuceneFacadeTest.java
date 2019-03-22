@@ -32,7 +32,7 @@ public class LuceneFacadeTest {
 	private static Random random = new Random();
 	private static final int count = 10;
 	private CountDownLatch countDownLatch;
-	private CopyOnWriteArrayList<String> ids = new CopyOnWriteArrayList<String>();
+	private CopyOnWriteArrayList<Long> ids = new CopyOnWriteArrayList<Long>();
 	
 	LuceneFacade facade;
 
@@ -46,7 +46,7 @@ public class LuceneFacadeTest {
 		for (int i = 0; i < count; i++) {
 			new Thread(() -> {
 				try {
-					String id;
+					long id;
 					switch (random.nextInt(3)) {
 					case 0:
 						id = facade.create(createDocument());
@@ -93,7 +93,7 @@ public class LuceneFacadeTest {
 		doc.add(new StringField("number", "F8V7067-APL-KIT", Store.YES));
 		doc.add(new TextField("name", "Belkin Mobile Power Cord for iPod w/ Dock", Store.NO));
 		doc.add(new TextField("manu", "Belkin", Store.NO));
-		String id = facade.create(doc);
+		long id = facade.create(doc);
 		
 		// 再添加一个文档，使其增加id
 		doc = new Document();
@@ -106,6 +106,7 @@ public class LuceneFacadeTest {
 		doc = facade.read(id);
 		assertNotNull(doc);
 		assertEquals("F8V7067-APL-KIT", doc.get("number"));
+		assertEquals(Long.toString(id), doc.get(LuceneFacade.ID_NAME));
 		
 		doc = facade.first("isbn", "978-1423103349");
 		assertNotNull(doc);
@@ -115,10 +116,11 @@ public class LuceneFacadeTest {
 		doc.add(new StringField("number", "IW-02", Store.YES));
 		doc.add(new TextField("name", "iPod &amp; iPod Mini USB 2.0 Cable", Store.NO));
 		doc.add(new TextField("manu", "Belkin", Store.NO));
-		String newId = facade.update(id, doc);
+		long newId = facade.update(id, doc);
 		assertNotEquals(id, newId);
 		doc = facade.read(newId);
 		assertEquals("IW-02", doc.get("number"));
+		assertEquals(Long.toString(newId), doc.get(LuceneFacade.ID_NAME));
 		
 		doc = facade.read(id);
 		assertNull(doc);
