@@ -37,14 +37,14 @@ public abstract class AuditedRepository<E, ID extends Serializable> extends Sear
 	 * @return 在Tuple#defaultRevisionEntity中获取到修订id
 	 */
 	@SuppressWarnings("unchecked")
-	public List<Tuple<E>> getRevisions(ID id) {
+	public List<Snapshoot<E>> getRevisions(ID id) {
 		AuditReader auditReader = AuditReaderFactory.get(entityManager);
 		AuditQuery query = auditReader.createQuery().forRevisionsOfEntity(entityClass, false, true);
 		query.add(AuditEntity.id().eq(id));
 		List<Object[]> result = query.getResultList();
-		List<Tuple<E>> ls = new ArrayList<Tuple<E>>();
+		List<Snapshoot<E>> ls = new ArrayList<Snapshoot<E>>();
 		for (Object[] o : result) {
-			Tuple<E> tuple = new Tuple<E>((E) o[0]/* 在版本时的详情 */,
+			Snapshoot<E> tuple = new Snapshoot<E>((E) o[0]/* 在版本时的详情 */,
 					(DefaultRevisionEntity) o[1]/* 版本详情：(id = 201, revisionDate = 2017-2-10 21:17:40) */,
 					(RevisionType) o[2])/* 增(ADD)、改(MOD)、删(DEL) */;
 			ls.add(tuple);
@@ -81,12 +81,12 @@ public abstract class AuditedRepository<E, ID extends Serializable> extends Sear
 	 * 
 	 * @param <E> 实体类
 	 */
-	public static class Tuple<E> {
+	public static class Snapshoot<E> {
 		public final E entity;
 		public final DefaultRevisionEntity defaultRevisionEntity;
 		public final RevisionType revisionType;
 
-		public Tuple(E entity, DefaultRevisionEntity defaultRevisionEntity, RevisionType revisionType) {
+		public Snapshoot(E entity, DefaultRevisionEntity defaultRevisionEntity, RevisionType revisionType) {
 			this.entity = entity;
 			this.defaultRevisionEntity = defaultRevisionEntity;
 			this.revisionType = revisionType;

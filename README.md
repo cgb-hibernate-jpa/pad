@@ -362,7 +362,7 @@ interface UserRepoCust extends SearchInterface<User, Long> {
 }
 ```
 
-SearchInterface接口具有全文搜索接口Page<E> search(String query, Pageable pageable)和List<E> search(String query)，所以UserRepoCust就不必重复定义全文搜索接口了。
+SearchInterface接口具有全文搜索接口Page&lt;E&gt; search(String query, Pageable pageable)和List&lt;E&gt; search(String query)，所以UserRepoCust就不必重复定义全文搜索接口了。
 
 #### 2.6.2 创建实现类
 

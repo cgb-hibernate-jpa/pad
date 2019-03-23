@@ -3,7 +3,7 @@ package com.github.emailtohl.lib.jpa;
 import java.io.Serializable;
 import java.util.List;
 
-import com.github.emailtohl.lib.jpa.AuditedRepository.Tuple;
+import com.github.emailtohl.lib.jpa.AuditedRepository.Snapshoot;
 
 /**
  * 查询实体对象历史修订版的接口
@@ -21,7 +21,7 @@ public interface AuditedInterface<E, ID extends Serializable> extends SearchInte
 	 * @param id 实体对象的id
 	 * @return 在Tuple#defaultRevisionEntity中获取到修订id
 	 */
-	List<Tuple<E>> getRevisions(ID id);
+	List<Snapshoot<E>> getRevisions(ID id);
 
 	/**
 	 * 查询某个实体在某个修订版时的历史记录
