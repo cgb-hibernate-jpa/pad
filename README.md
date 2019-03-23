@@ -26,7 +26,7 @@
 若在容器里编译，可参考：
 
 ```sh
-docker run -v $PWD:/mylib -v /var/repository:/root/.m2/repository -w /mylib maven mvn clean clean install
+docker run --rm -v $PWD:/mylib -v /var/repository:/root/.m2/repository -w /mylib maven mvn clean clean install
 ```
 
 ## 2. JPA相关功能

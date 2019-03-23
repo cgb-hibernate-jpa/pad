@@ -145,8 +145,8 @@ public class LuceneFacade implements AutoCloseable {
 			doc.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 			for (IndexableField field : doc.getFields()) {
 				indexableFieldNames.add(field.name());
-				if (LOG.isDebugEnabled() && field.fieldType().tokenized()) {
-					debugToken(field.name(), field.stringValue());
+				if (LOG.isTraceEnabled() && field.fieldType().tokenized()) {
+					inspectToken(field.name(), field.stringValue());
 				}
 			}
 			writer.addDocument(doc);
@@ -170,8 +170,8 @@ public class LuceneFacade implements AutoCloseable {
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
-			if (LOG.isDebugEnabled() && field.fieldType().tokenized()) {
-				debugToken(field.name(), field.stringValue());
+			if (LOG.isTraceEnabled() && field.fieldType().tokenized()) {
+				inspectToken(field.name(), field.stringValue());
 			}
 		}
 		writer.addDocument(document);
@@ -277,8 +277,8 @@ public class LuceneFacade implements AutoCloseable {
 		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
-			if (LOG.isDebugEnabled() && field.fieldType().tokenized()) {
-				debugToken(field.name(), field.stringValue());
+			if (LOG.isTraceEnabled() && field.fieldType().tokenized()) {
+				inspectToken(field.name(), field.stringValue());
 			}
 		}
 //		ByteBuffer byteBuffer = ByteBuffer.allocate(8);
@@ -487,11 +487,11 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
-	 * 查看分词信息
+	 * 查看分词信息，信息以日志形式打印，需开启debug模式
 	 * @param fieldName 字段名
 	 * @param text 待分词的字符串
 	 */
-	public void debugToken(String fieldName, String text) {
+	public void inspectToken(String fieldName, String text) {
 		// 将一个字符串创建成Token流
 		TokenStream tokenStream = analyzer.tokenStream(fieldName, new StringReader(text));
 		try {

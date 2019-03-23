@@ -80,7 +80,7 @@ public class TextFileSearchTest {
 		assertEquals(1, page.getNumberOfElements());
 
 		// 测试并发
-		short count = 100;
+		short count = 10;
 		CountDownLatch latch = new CountDownLatch(count);
 		ExecutorService exec = Executors.newCachedThreadPool();
 		for (int i = 0; i < count; i++) {
