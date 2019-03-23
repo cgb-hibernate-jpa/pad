@@ -108,6 +108,9 @@ public class LuceneFacadeTest {
 		assertEquals("F8V7067-APL-KIT", doc.get("number"));
 		assertEquals(Long.toString(id), doc.get(LuceneFacade.ID_NAME));
 		
+		long _id = facade.getId(doc);
+		assertEquals(id, _id);
+		
 		doc = facade.first("isbn", "978-1423103349");
 		assertNotNull(doc);
 		assertEquals("978-1423103349", doc.get("isbn"));

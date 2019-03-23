@@ -19,8 +19,8 @@ import com.github.emailtohl.lib.event.DeleteEntityEvent;
 import com.github.emailtohl.lib.event.UpdateEntityEvent;
 
 /**
- * 用在实体类的@EntityListeners注解中
- * 若注入了Spring的ApplicationEventPublisher则可将实体CRUD事件发布到Spring上下文中
+ * 本类一旦被引入实体类的@EntityListeners注解中，将会被JPA引擎自动创建
+ * 若将Spring的ApplicationEventPublisher传入本类，则可将实体CRUD事件发布到Spring上下文中
  * @author HeLei
  */
 public class EntityListener {

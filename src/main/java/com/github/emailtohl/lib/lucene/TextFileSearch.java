@@ -199,7 +199,8 @@ public class TextFileSearch implements AutoCloseable {
 			if (old == null) {
 				id = facade.create(document);
 			} else {
-				id = facade.update(Long.valueOf(old.get(LuceneFacade.ID_NAME)), document);
+				id = facade.getId(old);
+				id = facade.update(id, document);
 			}
 			return id;
 		}
@@ -215,7 +216,7 @@ public class TextFileSearch implements AutoCloseable {
 		if (textFileFilter.accept(file)) {
 			Document doc = facade.first(FILE_PATH, file.getPath());
 			if (doc != null) {
-				facade.delete(Long.valueOf(doc.get(LuceneFacade.ID_NAME)));
+				facade.delete(facade.getId(doc));
 			}
 		}
 	}

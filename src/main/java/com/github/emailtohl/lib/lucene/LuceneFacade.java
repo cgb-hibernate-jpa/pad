@@ -212,6 +212,24 @@ public class LuceneFacade implements AutoCloseable {
 	}
 	
 	/**
+	 * 获取该文档的id
+	 * @param document 查询该文档的id
+	 * @return 若没有ID_NAME Field这个字段，或该字段的值不是Long类型，则返回0
+	 */
+	public long getId(Document document) {
+		IndexableField field = document.getField(ID_NAME);
+		if (field == null) {
+			return 0L;
+		}
+		Number id = field.numericValue();
+		if (id instanceof Long) {
+			return ((Long) id).longValue();
+		} else {
+			return 0L;
+		}
+	}
+	
+	/**
 	 * <p>根据字段名（非id字段）和值精确查询第一个文档，一般用于唯一性键值查询</p>
 	 * <p>这里使用TermQuery进行精确查询，所以需要业务上保证此域的值唯一性</p>
 	 * <p>另外域的类型一般选择StringField，即在索引期间不做分词处理，否则原始值会被分词器处理，如去掉停用词，转为全小写等操作，造成查询失败</p>

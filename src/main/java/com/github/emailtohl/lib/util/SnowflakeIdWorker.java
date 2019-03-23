@@ -1,5 +1,7 @@
 package com.github.emailtohl.lib.util;
 
+import com.github.emailtohl.lib.exception.InnerDataStateException;
+
 /**
  * <h1>
  * id生成工具——SnowFlake雪花算法
@@ -108,7 +110,7 @@ public class SnowflakeIdWorker {
 
 		// 如果当前时间小于上一次ID生成的时间戳，说明系统时钟回退过这个时候应当抛出异常
 		if (timestamp < lastTimestamp) {
-			throw new RuntimeException(String.format(
+			throw new InnerDataStateException(String.format(
 					"Clock moved backwards.  Refusing to generate id for %d milliseconds", lastTimestamp - timestamp));
 		}
 
