@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.github.emailtohl.lib.config.TestEnvironment;
 import com.github.emailtohl.lib.entities.oauth2.ClientDetails;
-import com.github.emailtohl.lib.jpa.AuditedRepository.Snapshoot;
+import com.github.emailtohl.lib.jpa.AuditedRepository.RevTuple;
 import com.github.emailtohl.lib.model.Item;
 
 @Transactional
@@ -41,25 +41,25 @@ public class AuditedRepositoryTest extends TestEnvironment {
 
 	@Test
 	public void testGetRevisions() {
-		List<Snapshoot<Item>> ls = itemAuditedRepo.getRevisions(purpleOutfit.getId());
+		List<RevTuple<Item>> ls = itemAuditedRepo.getRevisions(purpleOutfit.getId());
 		assertFalse(ls.isEmpty());
 	}
 
 	@Test
 	public void testGetEntityAtRevision() {
-		List<Snapshoot<Item>> ls = itemAuditedRepo.getRevisions(orangeOutfit.getId());
-		ls.forEach(ss -> {
-			Item item = itemAuditedRepo.getEntityAtRevision(orangeOutfit.getId(), ss.defaultRevisionEntity.getId());
+		List<RevTuple<Item>> ls = itemAuditedRepo.getRevisions(orangeOutfit.getId());
+		ls.forEach(rt -> {
+			Item item = itemAuditedRepo.getEntityAtRevision(orangeOutfit.getId(), rt.defaultRevisionEntity.getId());
 			assertNotNull(item);
 		});
 	}
 
 	@Test
 	public void testRollback() {
-		List<Snapshoot<ClientDetails>> ls = clientDetailsRepo.getRevisions(clientDetails.getAppId());
-		ls.forEach(ss -> {
-			ClientDetails rev = clientDetailsRepo.getEntityAtRevision(clientDetails.getAppId(), ss.defaultRevisionEntity.getId());
-			clientDetailsRepo.rollback(rev.getAppId(), ss.defaultRevisionEntity.getId());
+		List<RevTuple<ClientDetails>> ls = clientDetailsRepo.getRevisions(clientDetails.getAppId());
+		ls.forEach(rt -> {
+			ClientDetails rev = clientDetailsRepo.getEntityAtRevision(clientDetails.getAppId(), rt.defaultRevisionEntity.getId());
+			clientDetailsRepo.rollback(rev.getAppId(), rt.defaultRevisionEntity.getId());
 		});
 	}
 
