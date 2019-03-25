@@ -50,7 +50,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 public abstract class EntityBase implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
 	private static final ObjectMapper om = new ObjectMapper();
-	private final static ConcurrentHashMap<Class<? extends EntityBase>, Field[]> FIELDS_CACHE = new ConcurrentHashMap<Class<? extends EntityBase>, Field[]>();
+	private static final ConcurrentHashMap<Class<? extends EntityBase>, Field[]> FIELDS_CACHE = new ConcurrentHashMap<Class<? extends EntityBase>, Field[]>();
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
 	 * "ID"属性名称
@@ -60,32 +60,32 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	/**
 	 * "创建日期"属性名称
 	 */
-	public static final String CREATE_DATE_PROPERTY_NAME = "createDate";
+	public static final String CREATION_TIME_PROPERTY_NAME = "creationTime";
 
 	/**
 	 * "修改日期"属性名称
 	 */
-	public static final String MODIFY_DATE_PROPERTY_NAME = "modifyDate";
+	public static final String MODIFY_TIME_PROPERTY_NAME = "modifyTime";
 	
 	/**
 	 * "并发控制的版本号"属性名称
 	 */
 	public static final String VERSION_PROPERTY_NAME = "version";
 	
-	public static final String[] PROPERTY_NAMES = {ID_PROPERTY_NAME, CREATE_DATE_PROPERTY_NAME, MODIFY_DATE_PROPERTY_NAME, VERSION_PROPERTY_NAME};
+	public static final String[] PROPERTY_NAMES = { ID_PROPERTY_NAME, CREATION_TIME_PROPERTY_NAME,
+			MODIFY_TIME_PROPERTY_NAME, VERSION_PROPERTY_NAME };
 
 	/** ID */
 	protected Long id;
 
 	/**
-	 * 创建日期
+	 * 创建时间
 	 */
-	protected Date createDate;
-
+	protected Date creationTime;
 	/**
-	 * 修改日期
+	 * 修改时间
 	 */
-	protected Date modifyDate;
+	protected Date modifyTime;
 	
 	/**
 	 * 本字段存在的意义在于并发修改同一记录时，抛出OptimisticLockException异常提醒用户，使用的乐观锁并发控制策略
@@ -109,7 +109,6 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	public Long getId() {
 		return id;
 	}
-
 	/**
 	 * 设置ID
 	 * @param id ID
@@ -119,51 +118,48 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	}
 
 	/**
-	 * 获取创建日期
-	 * @return 创建日期
+	 * 获取创建时间
+	 * @return 创建时间
 	 */
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-	@org.hibernate.search.annotations.DateBridge(resolution = org.hibernate.search.annotations.Resolution.DAY)
-	@Column(nullable = false, updatable = false, name = "create_date")
+	@org.hibernate.search.annotations.DateBridge(resolution = org.hibernate.search.annotations.Resolution.SECOND)
+	@Column(nullable = false, updatable = false, name = "creation_time")
 	@Temporal(TemporalType.TIMESTAMP)
-	public Date getCreateDate() {
-		return createDate;
+	public Date getCreationTime() {
+		return creationTime;
 	}
-
 	/**
-	 * 设置创建日期
-	 * @param createDate 创建日期
+	 * 设置创建时间
+	 * @param createTime 创建时间
 	 */
-	public void setCreateDate(Date createDate) {
-		this.createDate = createDate;
+	public void setCreationTime(Date createTime) {
+		this.creationTime = createTime;
 	}
 
 	/**
-	 * 获取修改日期
-	 * @return 修改日期
+	 * 获取修改时间
+	 * @return 修改时间
 	 */
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
-	@Column(nullable = false, name = "modify_date")
+	@Column(nullable = false, name = "modify_time")
 	@Temporal(TemporalType.TIMESTAMP)
-	public Date getModifyDate() {
-		return modifyDate;
+	public Date getModifyTime() {
+		return modifyTime;
 	}
-
 	/**
-	 * 设置修改日期
-	 * @param modifyDate 修改日期
+	 * 设置修改时间
+	 * @param modifyTime 修改时间
 	 */
-	public void setModifyDate(Date modifyDate) {
-		this.modifyDate = modifyDate;
+	public void setModifyTime(Date modifyTime) {
+		this.modifyTime = modifyTime;
 	}
 	
 	@Version
 	protected Integer getVersion() {
 		return version;
 	}
-
 	protected void setVersion(Integer version) {
 		this.version = version;
 	}
@@ -190,7 +186,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 			return false;
 		Class<?> thisClass = getClass(), otherClass = obj.getClass();
 		// 两者都不在同一继承结构上，包括JPA提供程序生成的代理
-		// 由于this是BaseEntity的实例，所以这种判断涵盖other instanceof BaseEntity
+		// 由于this是EntityBase的实例，所以这种判断涵盖other instanceof EntityBase
 		if (!thisClass.isAssignableFrom(otherClass) && !otherClass.isAssignableFrom(thisClass))
 			return false;
 		EntityBase other = (EntityBase) obj;
@@ -226,8 +222,8 @@ public abstract class EntityBase implements Serializable, Cloneable {
 			throw new InnerDataStateException(e);
 		}
 		cp.id = id;
-		cp.createDate = createDate;
-		cp.modifyDate = modifyDate;
+		cp.creationTime = creationTime;
+		cp.modifyTime = modifyTime;
 		cp.version = version;
 		for (Field f : getValueTypeFields(clz)) {
 			try {
@@ -285,7 +281,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	
 	/**
 	 * Spring 的BeanUtils.copyProperties方法在复制时需要指明忽略什么属性
-	 * 而本类在实体复制时往往需要忽略id，createDate，modifyDate，version的属性，因为他们是提供给JPA提供程序使用
+	 * 而本类在实体复制时往往需要忽略id，creationTime，modifyTime，version的属性，因为他们是提供给JPA提供程序使用
 	 * @param other 忽略的属性列表
 	 * @return 包括基类中需要忽略的所有属性
 	 */

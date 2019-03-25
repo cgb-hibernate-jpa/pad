@@ -48,7 +48,7 @@ import com.github.emailtohl.lib.util.SnowflakeIdWorker;
 /**
  * <p>对Lucene的IndexWriter和IndexReader进行简易的封装</p>
  * <p>主要是自实现IndexWriter和IndexReader的线程控制，确保索引更新后，IndexReader在没有运行时关闭并重建</p>
- * <p>仿数据库的访问方式，会自动为Document添加上id和create_time</p>
+ * <p>仿数据库的访问方式，会自动为Document添加上id和creation_time</p>
  * 
  * @author HeLei
  */
@@ -56,7 +56,7 @@ public class LuceneFacade implements AutoCloseable {
 	/** 在IndexWriter中是不能获取到docId的（分段合并会发生变化），所以需要唯一标识一个Document的属性 */
 	public static final String ID_NAME = "Snowflake_Id";
 	/** Document的属性名，创建时间 */
-	public static final String CREATE_TIME = "CREATE_TIME";
+	public static final String CREATION_TIME = "CREATION_TIME";
 	/** 索引和查询时使用的分词器 */
 	public final Analyzer analyzer;
 	/** id 生成工具 */
@@ -142,7 +142,7 @@ public class LuceneFacade implements AutoCloseable {
 	public void index(List<Document> documents) throws IOException {
 		for (Document doc : documents) {
 			doc.add(new LongField(ID_NAME, idWorker.nextId(), Store.YES));
-			doc.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
+			doc.add(new LongField(CREATION_TIME, System.currentTimeMillis(), Store.YES));
 			for (IndexableField field : doc.getFields()) {
 				indexableFieldNames.add(field.name());
 				if (LOG.isTraceEnabled() && field.fieldType().tokenized()) {
@@ -167,7 +167,7 @@ public class LuceneFacade implements AutoCloseable {
 	public long create(Document document) throws IOException {
 		long id = idWorker.nextId();
 		document.add(new LongField(ID_NAME, id, Store.YES));
-		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
+		document.add(new LongField(CREATION_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
 			if (LOG.isTraceEnabled() && field.fieldType().tokenized()) {
@@ -274,7 +274,7 @@ public class LuceneFacade implements AutoCloseable {
 	public long update(long id, Document document) throws IOException {
 		long newId = idWorker.nextId();
 		document.add(new LongField(ID_NAME, newId, Store.YES));
-		document.add(new LongField(CREATE_TIME, System.currentTimeMillis(), Store.YES));
+		document.add(new LongField(CREATION_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
 			indexableFieldNames.add(field.name());
 			if (LOG.isTraceEnabled() && field.fieldType().tokenized()) {

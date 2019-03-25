@@ -86,7 +86,7 @@ class EntityInspector {
 	}
 
 	/**
-	 * 对注解了@Entity的类进行分析，确定其访问的规则，默认返回PROPERTY，这不仅是JPA默认规则，而且与BaseEntity规则一致
+	 * 对注解了@Entity的类进行分析，确定其访问的规则，默认返回PROPERTY，这不仅是JPA默认规则，而且与EntityBase规则一致
 	 * 
 	 * @param entityClass 注解了@Entity的类
 	 * @return 访问规则：FIELD还是PROPERTY
