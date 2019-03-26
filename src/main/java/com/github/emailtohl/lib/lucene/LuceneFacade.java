@@ -5,6 +5,7 @@ import java.io.StringReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -43,7 +44,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 
-import com.github.emailtohl.lib.util.SnowflakeIdWorker;
+import com.github.emailtohl.lib.util.SnowFlake;
 
 /**
  * <p>对Lucene的IndexWriter和IndexReader进行简易的封装</p>
@@ -60,7 +61,7 @@ public class LuceneFacade implements AutoCloseable {
 	/** 索引和查询时使用的分词器 */
 	public final Analyzer analyzer;
 	/** id 生成工具 */
-	public final SnowflakeIdWorker idWorker;
+	public final SnowFlake idCreator;
 	/** 日志 */
 	private final Logger LOG = LogManager.getLogger();
 	/** 记录文档有哪些属性，便于查询 */
@@ -92,7 +93,7 @@ public class LuceneFacade implements AutoCloseable {
 		this.writer = new IndexWriter(indexPath, conf);
 		this.reader = DirectoryReader.open(writer);
 		this.searcher = new IndexSearcher(reader);
-		this.idWorker = new SnowflakeIdWorker(workerId, datacenterId);
+		this.idCreator = new SnowFlake(workerId, datacenterId);
 	}
 	
 	/**
@@ -102,7 +103,8 @@ public class LuceneFacade implements AutoCloseable {
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public LuceneFacade(Directory indexPath, Analyzer analyzer) throws IOException {
-		this(indexPath, analyzer, System.currentTimeMillis() & 0b11111, System.currentTimeMillis() & 0b11111);
+		this(indexPath, analyzer, new Random().nextInt((int) SnowFlake.MAX_DATACENTER_NUM),
+				new Random().nextInt((int) SnowFlake.MAX_MACHINE_NUM));
 	}
 
 	/**
@@ -141,7 +143,7 @@ public class LuceneFacade implements AutoCloseable {
 	 */
 	public void index(List<Document> documents) throws IOException {
 		for (Document doc : documents) {
-			doc.add(new LongField(ID_NAME, idWorker.nextId(), Store.YES));
+			doc.add(new LongField(ID_NAME, idCreator.nextId(), Store.YES));
 			doc.add(new LongField(CREATION_TIME, System.currentTimeMillis(), Store.YES));
 			for (IndexableField field : doc.getFields()) {
 				indexableFieldNames.add(field.name());
@@ -165,7 +167,7 @@ public class LuceneFacade implements AutoCloseable {
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public long create(Document document) throws IOException {
-		long id = idWorker.nextId();
+		long id = idCreator.nextId();
 		document.add(new LongField(ID_NAME, id, Store.YES));
 		document.add(new LongField(CREATION_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {
@@ -272,7 +274,7 @@ public class LuceneFacade implements AutoCloseable {
 	 * @throws IOException 来自底层的输入输出异常
 	 */
 	public long update(long id, Document document) throws IOException {
-		long newId = idWorker.nextId();
+		long newId = idCreator.nextId();
 		document.add(new LongField(ID_NAME, newId, Store.YES));
 		document.add(new LongField(CREATION_TIME, System.currentTimeMillis(), Store.YES));
 		for (IndexableField field : document.getFields()) {

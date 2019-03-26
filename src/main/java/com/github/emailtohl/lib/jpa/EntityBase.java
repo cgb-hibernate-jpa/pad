@@ -49,7 +49,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 @MappedSuperclass
 public abstract class EntityBase implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
-	private static final ObjectMapper om = new ObjectMapper();
+	private static final ObjectMapper OMAPPER = new ObjectMapper();
 	private static final ConcurrentHashMap<Class<? extends EntityBase>, Field[]> FIELDS_CACHE = new ConcurrentHashMap<Class<? extends EntityBase>, Field[]>();
 	protected static final Logger LOG = LogManager.getLogger();
 	/**
@@ -123,6 +123,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	 */
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+	// 将日期类型转为string，直到秒级
 	@org.hibernate.search.annotations.DateBridge(resolution = org.hibernate.search.annotations.Resolution.SECOND)
 	@Column(nullable = false, updatable = false, name = "creation_time")
 	@Temporal(TemporalType.TIMESTAMP)
@@ -143,6 +144,8 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	 */
 	@DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+	// 将日期类型转为string，直到秒级
+	@org.hibernate.search.annotations.DateBridge(resolution = org.hibernate.search.annotations.Resolution.SECOND)
 	@Column(nullable = false, name = "modify_time")
 	@Temporal(TemporalType.TIMESTAMP)
 	public Date getModifyTime() {
@@ -200,7 +203,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	@Override
 	public String toString() {
 		try {
-            return om.writeValueAsString(this);
+            return OMAPPER.writeValueAsString(this);
         } catch (JsonProcessingException e) {
         	return String.format("{\"id\":%d}", id);
         }
