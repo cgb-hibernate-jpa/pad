@@ -208,7 +208,7 @@ public class QueryRepositoryTest extends TestEnvironment {
 		q = b.createQuery(SpringSession.class);
 		r = q.from(SpringSession.class);
 		SessionForm form = new SessionForm();
-		// maxInactiveInterval属性被设置了@InitialValueAsCondition注解，即便是初始值0也会作为条件参数
+		// maxInactiveInterval属性被设置了@ZeroCondition注解，即便是初始值0也会作为条件参数
 		// 所以这里就需要传入一个查询条件
 		form.setMaxInactiveInterval(springSession.getMaxInactiveInterval());
 		form.setCreationTime(springSession.getCreationTime());

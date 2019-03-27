@@ -283,7 +283,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	
 	/**
 	 * Spring 的BeanUtils.copyProperties方法在复制时需要指明忽略什么属性
-	 * 而本类在实体复制时往往需要忽略id，creationTime，modifyTime，version的属性，因为他们是提供给JPA提供程序使用
+	 * 而本类在实体复制时往往需要忽略id，createTime，modifyTime，version的属性，因为他们是提供给JPA提供程序使用
 	 * @param other 忽略的属性列表
 	 * @return 包括基类中需要忽略的所有属性
 	 */
