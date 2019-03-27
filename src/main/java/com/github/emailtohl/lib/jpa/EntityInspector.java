@@ -7,7 +7,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.security.Timestamp;
+import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.NClob;
+import java.sql.Timestamp;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
@@ -16,8 +20,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -395,7 +401,10 @@ class EntityInspector {
 	
 	/**
 	 * 判断类型是否值类型，如基本类型、字符、数字、布尔、枚举、时间等。
-	 * 值类型的对象往往具有不变性，在对象的属性分析中，作为基本单位不再向下分析，在orm里，与数据库字段相对应
+	 * 值类型的对象往往具有不变性，在对象的属性分析中，作为基本单位不再向下分析，在orm里，与数据库字段相对应,关于值类型,Hibernate官方解释是:
+	 * <p>
+	 * 值类型是一段不定义其自身生命周期的数据。实际上，它由定义其生命周期的实体拥有。从另一个角度看，实体的所有状态都完全由值类型组成。这些状态字段或JavaBean属性称为持久属性。
+	 * </p>
 	 * @param clazz 被判断的类型
 	 * @return 值类型返回true，否则返回false
 	 */
@@ -403,9 +412,16 @@ class EntityInspector {
 		return clazz.isPrimitive() || String.class.isAssignableFrom(clazz) || Number.class.isAssignableFrom(clazz)
 				|| Enum.class.isAssignableFrom(clazz) || Character.class.isAssignableFrom(clazz)
 				|| Boolean.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz)
-				|| Calendar.class.isAssignableFrom(clazz) || Timestamp.class.isAssignableFrom(clazz)
+				|| Calendar.class.isAssignableFrom(clazz) || Locale.class.isAssignableFrom(clazz)
+				|| TimeZone.class.isAssignableFrom(clazz) || Timestamp.class.isAssignableFrom(clazz)
+				// Temporal包含Instant,LocalDateTime,LocalDate,LocalTime,OffsetDateTime,OffsetTime,ZonedDateTime
 				|| Temporal.class.isAssignableFrom(clazz) || TimeZone.class.isAssignableFrom(clazz)
-				|| TemporalAmount.class.isAssignableFrom(clazz);
+				|| TemporalAmount.class.isAssignableFrom(clazz)/* 包括TemporalAmount */
+				|| URL.class.isAssignableFrom(clazz) || Blob.class.isAssignableFrom(clazz)
+				|| Clob.class.isAssignableFrom(clazz) || NClob.class.isAssignableFrom(clazz)
+				|| byte[].class.isAssignableFrom(clazz) || Byte[].class.isAssignableFrom(clazz)
+				|| char[].class.isAssignableFrom(clazz) || Character[].class.isAssignableFrom(clazz)
+				|| UUID.class.isAssignableFrom(clazz);
 	}
 	
 	/**

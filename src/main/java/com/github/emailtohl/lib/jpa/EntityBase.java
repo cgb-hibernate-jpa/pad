@@ -75,7 +75,10 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	public static final String[] PROPERTY_NAMES = { ID_PROPERTY_NAME, CREATION_TIME_PROPERTY_NAME,
 			MODIFY_TIME_PROPERTY_NAME, VERSION_PROPERTY_NAME };
 
-	/** ID */
+	/**
+	 * id
+	 * 此字段使用java.lang.Long类型,可以用null表示实体未存储时缺失值的状态
+	 */
 	protected Long id;
 
 	/**

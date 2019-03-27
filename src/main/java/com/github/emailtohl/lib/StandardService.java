@@ -11,7 +11,11 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.Timestamp;
+import java.net.URL;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.NClob;
+import java.sql.Timestamp;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Calendar;
@@ -22,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolation;
@@ -363,6 +368,9 @@ public abstract class StandardService<E, ID extends Serializable> {
 	public boolean isValueTypeInstance(Object o) {
 		return o instanceof String || o instanceof Number || o instanceof Enum || o instanceof Character
 				|| o instanceof Boolean || o instanceof Date || o instanceof Calendar || o instanceof Timestamp
-				|| o instanceof Temporal || o instanceof TimeZone || o instanceof TemporalAmount;
+				// Temporal包含Instant,LocalDateTime,LocalDate,LocalTime,OffsetDateTime,OffsetTime,ZonedDateTime
+				|| o instanceof Temporal || o instanceof TimeZone || o instanceof TemporalAmount || o instanceof URL
+				|| o instanceof Blob || o instanceof Clob || o instanceof NClob || o instanceof byte[]
+				|| o instanceof Byte[] || o instanceof char[] || o instanceof Character[] || o instanceof UUID;
 	}
 }
