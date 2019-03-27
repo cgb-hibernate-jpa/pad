@@ -40,7 +40,7 @@ public class EntityListener {
 	 */
 	@PrePersist
 	public void prePersist(EntityBase entity) {
-		entity.setCreationTime(new Date());
+		entity.setCreateTime(new Date());
 		entity.setModifyTime(new Date());
 	}
 

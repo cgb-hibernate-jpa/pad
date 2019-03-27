@@ -41,11 +41,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
 // 再对象图中防止循环依赖
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "_id")
 @EntityListeners(EntityListener.class)
-/*
- * @MappedSuperclass 用在父类上面。
- * 当这个类肯定是父类时，加此标注。
- * 如果改成@Entity，则继承后，多个类继承，只会生成一个表，而不是多个继承，生成多个表。
- */
+// @MappedSuperclass 用于被继承的在基类上面，让所有继承它的实体类都具备同样的属性
 @MappedSuperclass
 public abstract class EntityBase implements Serializable, Cloneable {
 	private static final long serialVersionUID = -411374988586534072L;
@@ -58,12 +54,12 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	public static final String ID_PROPERTY_NAME = "id";
 
 	/**
-	 * "创建日期"属性名称
+	 * "创建时间"属性名称
 	 */
-	public static final String CREATION_TIME_PROPERTY_NAME = "creationTime";
+	public static final String CREATE_TIME_PROPERTY_NAME = "createTime";
 
 	/**
-	 * "修改日期"属性名称
+	 * "修改时间"属性名称
 	 */
 	public static final String MODIFY_TIME_PROPERTY_NAME = "modifyTime";
 	
@@ -72,7 +68,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	 */
 	public static final String VERSION_PROPERTY_NAME = "version";
 	
-	public static final String[] PROPERTY_NAMES = { ID_PROPERTY_NAME, CREATION_TIME_PROPERTY_NAME,
+	public static final String[] PROPERTY_NAMES = { ID_PROPERTY_NAME, CREATE_TIME_PROPERTY_NAME,
 			MODIFY_TIME_PROPERTY_NAME, VERSION_PROPERTY_NAME };
 
 	/**
@@ -84,7 +80,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	/**
 	 * 创建时间
 	 */
-	protected Date creationTime;
+	protected Date createTime;
 	/**
 	 * 修改时间
 	 */
@@ -128,17 +124,17 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
 	// 将日期类型转为string，直到秒级
 	@org.hibernate.search.annotations.DateBridge(resolution = org.hibernate.search.annotations.Resolution.SECOND)
-	@Column(nullable = false, updatable = false, name = "creation_time")
+	@Column(nullable = false, updatable = false, name = "create_time")
 	@Temporal(TemporalType.TIMESTAMP)
-	public Date getCreationTime() {
-		return creationTime;
+	public Date getCreateTime() {
+		return createTime;
 	}
 	/**
 	 * 设置创建时间
 	 * @param createTime 创建时间
 	 */
-	public void setCreationTime(Date createTime) {
-		this.creationTime = createTime;
+	public void setCreateTime(Date createTime) {
+		this.createTime = createTime;
 	}
 
 	/**
@@ -228,7 +224,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 			throw new InnerDataStateException(e);
 		}
 		cp.id = id;
-		cp.creationTime = creationTime;
+		cp.createTime = createTime;
 		cp.modifyTime = modifyTime;
 		cp.version = version;
 		for (Field f : getValueTypeFields(clz)) {
