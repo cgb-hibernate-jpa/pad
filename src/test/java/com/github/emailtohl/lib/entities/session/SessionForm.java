@@ -20,17 +20,17 @@ public class SessionForm extends SpringSession {
 	@Instruction(propertyName = "principalName", operator = Operator.NOT_LIKE)
 	public String notlike = "bar";
 
-	@Instruction(propertyName = "createTime", operator = Operator.GT)
+	@Instruction(propertyName = "creationTime", operator = Operator.GT)
 	public long history = getTime(LocalDate.now().minusDays(1));
 	
-	@Instruction(propertyName = "createTime", operator = Operator.GTE)
+	@Instruction(propertyName = "creationTime", operator = Operator.GTE)
 	public long History = getTime(LocalDate.now().minusDays(1));
 	
 	private long future = getTime(LocalDate.now().plusDays(1));
 	
 	public long Future = getTime(LocalDate.now().plusDays(1));
 	
-	@Instruction(propertyName = "createTime", operator = Operator.LT)
+	@Instruction(propertyName = "creationTime", operator = Operator.LT)
 	public long getFuture() {
 		return future;
 	}
