@@ -60,8 +60,24 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 	 */
 	public Page<E> queryForPage(E example, Pageable pageable) {
 		CriteriaBuilder b = entityManager.getCriteriaBuilder();
+		
+		CriteriaQuery<Long> c = b.createQuery(Long.class);
+		Root<E> r = c.from(entityClass);
+		c = c.select(b.count(r)).distinct(true);
+		if (example != null) {
+			Set<Predicate> predicates = getPredicates(example, r, b);
+			if (predicates.size() > 0) {
+				Predicate[] restrictions = new Predicate[predicates.size()];
+				c = c.where(predicates.toArray(restrictions));
+			}
+		}
+		Long total = entityManager.createQuery(c).getSingleResult();
+		if (total == null || total == 0) {
+			return new PageImpl<E>(new ArrayList<E>(), pageable, 0);
+		}
+		
 		CriteriaQuery<E> q = b.createQuery(entityClass);
-		Root<E> r = q.from(entityClass);
+		r = q.from(entityClass);
 		q = q.select(r).distinct(true);
 		if (example != null) {
 			Set<Predicate> predicates = getPredicates(example, r, b);
@@ -73,18 +89,6 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		q = q.orderBy(QueryUtils.toOrders(pageable.getSort(), r, b));
 		List<E> result = entityManager.createQuery(q).setFirstResult((int) pageable.getOffset())
 				.setMaxResults(pageable.getPageSize()).getResultList();
-
-		CriteriaQuery<Long> c = b.createQuery(Long.class);
-		r = c.from(entityClass);
-		c = c.select(b.count(r)).distinct(true);
-		if (example != null) {
-			Set<Predicate> predicates = getPredicates(example, r, b);
-			if (predicates.size() > 0) {
-				Predicate[] restrictions = new Predicate[predicates.size()];
-				c = c.where(predicates.toArray(restrictions));
-			}
-		}
-		Long total = entityManager.createQuery(c).getSingleResult();
 
 		return new PageImpl<E>(result, pageable, total);
 	}
