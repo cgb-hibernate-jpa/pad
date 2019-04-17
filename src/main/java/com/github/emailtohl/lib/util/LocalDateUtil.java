@@ -28,7 +28,14 @@ public final class LocalDateUtil {
 	 * @return LocalDate java.time.LocalDate
 	 */
 	public static LocalDate toLocalDate(Date date) {
-		Instant instant = date.toInstant();
+		// java.sql.Date的toInstant方法不能使用
+		Date _date;
+		if (date instanceof java.sql.Date) {
+			_date = new Date(date.getTime());
+		} else {
+			_date = date;
+		}
+		Instant instant = _date.toInstant();
 		ZoneId zoneId = ZoneId.systemDefault();
 		// atZone()方法返回在指定时区从此Instant生成的ZonedDateTime。
 		return instant.atZone(zoneId).toLocalDate();
@@ -39,7 +46,14 @@ public final class LocalDateUtil {
 	 * @return java.time.LocalDateTime
 	 */
 	public static LocalDateTime toLocalDateTime(Date date) {
-		Instant instant = date.toInstant();
+		// java.sql.Date的toInstant方法不能使用
+		Date _date;
+		if (date instanceof java.sql.Date) {
+			_date = new Date(date.getTime());
+		} else {
+			_date = date;
+		}
+		Instant instant = _date.toInstant();
 		ZoneId zone = ZoneId.systemDefault();
 		return LocalDateTime.ofInstant(instant, zone);
 	}
