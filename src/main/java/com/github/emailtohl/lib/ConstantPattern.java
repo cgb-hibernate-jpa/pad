@@ -74,8 +74,4 @@ public interface ConstantPattern {
 	 */
 	String LEGAL_FILENAME = "^\\s*[^ -][^\\r\\n\\e]*$";
 	
-	public static void main(String[] args) {
-		String t = "abc\nnde";
-		System.out.println(t.matches(ConstantPattern.LEGAL_FILENAME));
-	}
 }

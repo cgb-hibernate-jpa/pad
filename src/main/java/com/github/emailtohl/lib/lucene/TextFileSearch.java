@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.annotation.PreDestroy;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -236,7 +234,6 @@ public class TextFileSearch implements AutoCloseable {
 		return paths;
 	}
 
-	@PreDestroy
 	@Override
 	public void close() throws Exception {
 		facade.close();
