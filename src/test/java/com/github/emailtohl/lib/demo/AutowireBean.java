@@ -3,6 +3,8 @@ package com.github.emailtohl.lib.demo;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +41,8 @@ public class AutowireBean {
 			
 			assert bean2.bean1 == bean1;
 			
+			ctx.publishEvent(new CustEvent());
+			
 			ctx.stop();
 		}
 		System.out.println("运行结束");
@@ -57,7 +61,24 @@ class Conf {
 class Bean1 {
 }
 
+class CustEvent extends ApplicationEvent {
+	private static final long serialVersionUID = 5077340468201468652L;
+	public CustEvent() {
+		super("custEvent");
+	}
+}
+
+@Component
+class CustListener implements ApplicationListener<CustEvent> {
+	@Override
+	public void onApplicationEvent(CustEvent event) {
+		System.out.println(event.getSource());
+	}
+}
+
 class Bean2 {
 	@Autowired
 	Bean1 bean1;
+	@Autowired
+	CustListener custListener;
 }
