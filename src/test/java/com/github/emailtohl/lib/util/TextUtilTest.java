@@ -1,5 +1,7 @@
 package com.github.emailtohl.lib.util;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -52,4 +54,9 @@ public class TextUtilTest {
 		logger.debug("TextUtil: {} ", txt);
 	}
 
+	@Test
+	public void testGetTextResourceAsString() throws IOException {
+		String cfg = TextUtil.getTextResourceAsString("log4j2-test.xml");
+		assertTrue(cfg.contains("configuration"));
+	}
 }

@@ -1,4 +1,4 @@
-package com.github.emailtohl.lib.demo;
+package com.github.emailtohl.lib.demo.springInject;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,28 +20,29 @@ public class AutowireBean {
 			ctx.refresh();
 			ctx.start();
 			ctx.registerShutdownHook();
-			
+
 			CustListener listener = ctx.getBean(CustListener.class);
-			assert listener != null;
-			
+			assert listener != null : "没有将CustListener定义为bean";
+
 			Abean abean = null;
 			try {
 				abean = ctx.getBean(Abean.class);
-			} catch (NoSuchBeanDefinitionException e) {}
+			} catch (NoSuchBeanDefinitionException e) {
+			}
 			assert abean == null;
-			
+
 			abean = new Abean();
 			assert abean.custListener == null;
-			
+
 			ctx.getAutowireCapableBeanFactory().autowireBean(abean);
 			assert abean.custListener == listener;
 			ctx.getBeanFactory().registerSingleton(abean.getClass().getSimpleName(), abean);
-			
+
 			Abean fromCtx = ctx.getBean(Abean.class);
 			assert fromCtx == abean;
-			
+
 			ctx.publishEvent(new CustEvent());
-			
+
 			ctx.stop();
 		}
 		System.out.println("运行结束");
@@ -61,6 +62,7 @@ class Conf {
 
 class CustEvent extends ApplicationEvent {
 	private static final long serialVersionUID = 5077340468201468652L;
+
 	public CustEvent() {
 		super("custEvent");
 	}

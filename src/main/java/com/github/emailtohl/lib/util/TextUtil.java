@@ -4,6 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -124,6 +128,40 @@ public final class TextUtil {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * 将输入的数据读取到输出中
+	 * @param input 输入
+	 * @param output 输出
+	 * @return 读取的字节数
+	 * @throws IOException 读取异常
+	 */
+	public static long copy(Reader input, Writer output) throws IOException {
+		char[] buffer = new char[4096];
+		long count = 0;
+		int n;
+		while (-1 != (n = input.read(buffer))) {
+			output.write(buffer, 0, n);
+			count += n;
+		}
+		return count;
+	}
+
+	/**
+	 * 在CLASSPATH下读取文件内容
+	 * @param resource 文件的路径
+	 * @return 文件的内容
+	 * @throws IOException 读取异常
+	 */
+	public static String getTextResourceAsString(String resource) throws IOException {
+		InputStream is = TextUtil.class.getClassLoader().getResourceAsStream(resource);
+		if (is == null) {
+			throw new IllegalArgumentException("Resource not found: " + resource);
+		}
+		StringWriter sw = new StringWriter();
+		copy(new InputStreamReader(is), sw);
+		return sw.toString();
 	}
 	
 	public static String join(String[] arr) {
