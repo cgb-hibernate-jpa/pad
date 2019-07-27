@@ -29,6 +29,7 @@
 
 # Log file
 *.log
+*.tlog
 
 # Package Files #
 *.jar
