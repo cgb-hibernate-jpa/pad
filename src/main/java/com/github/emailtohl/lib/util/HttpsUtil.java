@@ -33,6 +33,8 @@ import okhttp3.OkHttpClient;
 public class HttpsUtil {
 	private static final ConcurrentHashMap<String, List<Cookie>> COOKIE_STORE = new ConcurrentHashMap<>();
 
+	private HttpsUtil() {}
+
 	public static OkHttpClient getOkHttpClient() {
 		return new OkHttpClient.Builder().hostnameVerifier(getHostnameVerifier())
 				.sslSocketFactory(getDefaultSSLSocketFactory(), getX509TrustManager()).cookieJar(new CookieJar() {// 这里可以做cookie传递，保存等操作

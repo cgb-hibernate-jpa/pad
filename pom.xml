@@ -19,7 +19,7 @@
 		<hibernate.search.version>5.11.1.Final</hibernate.search.version>
 		<lucene.version>5.5.5</lucene.version>
 		<log4j.version>2.11.2</log4j.version>
-		<springframework.version>5.1.5.RELEASE</springframework.version>
+		<springframework.version>5.1.8.RELEASE</springframework.version>
 		<jackson.version>2.9.8</jackson.version>
 	</properties>
 
@@ -237,7 +237,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.7.0</version>
+				<version>3.8.1</version>
 				<configuration>
 					<!-- 启动Java8的获取方法参数名字的新功能 -->
 					<compilerArgument>-parameters</compilerArgument>
@@ -259,7 +259,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -274,7 +274,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>

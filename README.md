@@ -28,6 +28,7 @@
 ```sh
 docker run --rm -v $PWD:/mylib -v /var/repository:/root/.m2/repository -w /mylib maven mvn clean install
 ```
+若maven-javadoc-plugin插件不能正常工作导致打包失败，可加上参数-Dmaven.javadoc.skip=true忽略
 
 ## 2. JPA相关功能
 

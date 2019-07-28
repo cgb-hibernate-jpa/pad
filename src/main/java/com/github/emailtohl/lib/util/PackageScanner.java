@@ -17,12 +17,12 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * 扫描包，获取包下的所有类
+ * @author HeLei
  */
 public final class PackageScanner {
-	private PackageScanner() {
-	}
-
 	private static final Logger logger = LogManager.getLogger();
+	
+	private PackageScanner() {}
 
 	/**
 	 * 查找包名下的所有类实例
@@ -111,10 +111,10 @@ public final class PackageScanner {
 
 	/**
 	 * 以文件的形式来获取包下的所有类实例
-	 * @param packageName 包名
-	 * @param packagePath
-	 * @param recursive
-	 * @param classes
+	 * @param packageName 包名，用于classLoader加载
+	 * @param packagePath 包路径，用于目录查找
+	 * @param recursive 递归查找
+	 * @param classes 存放类实例的集合
 	 */
 	public static void findAndAddClassesInPackageByFile(String packageName, String packagePath, final boolean recursive,
 			Set<Class<?>> classes) {
@@ -122,7 +122,7 @@ public final class PackageScanner {
 		File dir = new File(packagePath);
 		// 如果不存在或者 也不是目录就直接返回
 		if (!dir.exists() || !dir.isDirectory()) {
-			logger.debug("用户定义包名 " + packageName + " 下没有任何文件");
+			logger.debug("用户定义包 {} 下没有任何文件", packageName);
 			return;
 		}
 		// 如果存在 就获取包下的所有文件 包括目录
@@ -154,8 +154,4 @@ public final class PackageScanner {
 		}
 	}
 
-/*	public static void main(String[] args) {
-		Set<Class<?>> set = getClasses("mine.frame");
-		System.out.println(set);
-	}*/
 }

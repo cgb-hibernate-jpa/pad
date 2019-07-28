@@ -13,6 +13,9 @@ import java.util.Date;
  * @author HeLei
  */
 public final class LocalDateUtil {
+	
+	private LocalDateUtil() {}
+
 	/**
 	 * @param localDate java.time.LocalDate
 	 * @return Date java.util.Date

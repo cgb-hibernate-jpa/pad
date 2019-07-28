@@ -27,6 +27,8 @@ import org.mozilla.intl.chardet.nsPSMDetector;
 public final class TextUtil {
 	private static final Logger LOG = LogManager.getLogger();
 
+	private TextUtil() {}
+	
 	/**
 	 * 从输入流中检测内容编码格式，jchardet是mozilla自动字符集探测算法代码
 	 * @param inputStream 文本流
