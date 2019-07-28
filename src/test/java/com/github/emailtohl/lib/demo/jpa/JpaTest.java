@@ -3,6 +3,8 @@ package com.github.emailtohl.lib.demo.jpa;
 import static org.junit.Assert.assertNotNull;
 
 import javax.persistence.EntityManager;
+import javax.sql.DataSource;
+import javax.transaction.UserTransaction;
 
 import org.junit.After;
 import org.junit.Before;
@@ -11,10 +13,10 @@ import org.junit.Test;
 import com.github.emailtohl.lib.entities.oauth2.OauthCode;
 
 public class JpaTest {
-	public TransactionManagerSetup TM;
-	public String persistenceUnitName;
-	public String[] hbmResources;
-	public JPASetup JPA;
+	private TransactionManagerSetup TM;
+	private String persistenceUnitName;
+	private String[] hbmResources;
+	private JPASetup JPA;
 
 	@Before
 	public void setUp() throws Exception {
@@ -50,7 +52,12 @@ public class JpaTest {
 
 	@Test
 	public void test() {
-//		fail("Not yet implemented");
+		DataSource dataSource = TM.getDataSource();
+		assertNotNull(dataSource);
+		
+		UserTransaction ut = TM.getUserTransaction();
+		assertNotNull(ut);
+		
 		EntityManager em = JPA.entityManagerFactory.createEntityManager();
 		OauthCode a = new OauthCode();
 		a.setCode("a token");
