@@ -10,8 +10,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.springframework.util.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,15 +20,20 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.github.emailtohl.lib.exception.InnerDataStateException;
+
 /**
- * 简易的xml元素数据模型，但满足自定义的equals hashcode，可在容器中识别
+ * 自定义的xml元素数据模型，但满足自定义的equals hashcode，可在容器中识别
  * 
  * @author helei
  *
  */
 public class Elem {
-	private static DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-	private static final Logger log = LogManager.getLogger(Elem.class);
+	private static final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	private static final ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 	/**
 	 * 节点名字
 	 */
@@ -42,6 +46,10 @@ public class Elem {
 	 * 该元素上的属性
 	 */
 	public final Attrs attrs = new Attrs();
+	/**
+	 * 元素的文本集合
+	 */
+	public final List<String> texts = new ArrayList<String>();
 
 	/**
 	 * 从Element中转成本类实例
@@ -56,20 +64,33 @@ public class Elem {
 	/**
 	 * 将xml解析为自定义元素数据结构
 	 * 
-	 * @param xml string文本
-	 * @throws ParserConfigurationException if a DocumentBuilder cannot be created
-	 *                                      which satisfies the configuration
-	 *                                      requested
-	 * @throws IOException                  If any IO errors occur
-	 * @throws SAXException                 If any parse errors occur
+	 * @param xmlContent xml的文本
+	 * @throws SAXException If any parse errors occur
 	 */
-	public Elem(String xml) throws ParserConfigurationException, SAXException, IOException {
-		DocumentBuilder builder = factory.newDocumentBuilder();
-		InputStream inputStream = new ByteArrayInputStream(xml.getBytes());
-		Document document = builder.parse(inputStream);
-		Element element = document.getDocumentElement();
+	public Elem(String xmlContent) throws SAXException {
+		Element element = getElement(xmlContent);
 		this.name = element.getNodeName();
 		fillRoot(element);
+	}
+
+	/**
+	 * 解析xml文本获取元素，屏蔽不可能发生的异常
+	 * 
+	 * @param xmlContent xml文本
+	 * @return 解析的xml元素实例
+	 * @throws SAXException If any parse errors occur
+	 */
+	private Element getElement(String xmlContent) throws SAXException {
+		try {
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			InputStream inputStream = new ByteArrayInputStream(xmlContent.getBytes());
+			Document document = builder.parse(inputStream);
+			return document.getDocumentElement();
+		} catch (ParserConfigurationException e) {
+			throw new InnerDataStateException(e);
+		} catch (IOException e) {
+			throw new InnerDataStateException(e);
+		}
 	}
 
 	/**
@@ -87,9 +108,6 @@ public class Elem {
 			}
 		}
 		this.fillChildren(element.getChildNodes());
-		if (log.isDebugEnabled()) {
-			log.debug(this);
-		}
 	}
 
 	/**
@@ -108,8 +126,9 @@ public class Elem {
 				Attr attr = (Attr) node;
 				this.attrs.put(attr.getNodeName(), attr.getNodeValue());
 			} else if (node instanceof Text) {
-				if (log.isTraceEnabled()) {
-					log.trace(node.getTextContent());
+				String content = node.getTextContent();
+				if (StringUtils.hasText(content)) {
+					this.texts.add(content);
 				}
 			}
 		}
@@ -119,9 +138,28 @@ public class Elem {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((attrs == null) ? 0 : attrs.hashCode());
-		result = prime * result + ((children == null) ? 0 : children.hashCode());
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + (attrs.size() == 0 ? 0 : attrs.hashCode());
+		result = prime * result + (children.size() == 0 ? 0 : childreHashCode());
+		result = prime * result + (StringUtils.hasText(name) ? 0 : name.hashCode());
+		result = prime * result + (texts.size() == 0 ? 0 : textHashCode());
+		return result;
+	}
+
+	private int childreHashCode() {
+		final int prime = 31;
+		int result = 1;
+		for (Elem e : children) {
+			result = prime * result + e.hashCode();
+		}
+		return result;
+	}
+	
+	private int textHashCode() {
+		final int prime = 31;
+		int result = 1;
+		for (String s : texts) {
+			result = prime * result + s.hashCode();
+		}
 		return result;
 	}
 
@@ -134,15 +172,11 @@ public class Elem {
 		if (getClass() != obj.getClass())
 			return false;
 		Elem other = (Elem) obj;
-		if (attrs == null) {
-			if (other.attrs != null)
-				return false;
-		} else if (!attrs.equals(other.attrs))
+		if (!attrs.equals(other.attrs))
 			return false;
-		if (children == null) {
-			if (other.children != null)
-				return false;
-		} else if (!children.containsAll(other.children) || !other.children.containsAll(children))
+		if (!children.containsAll(other.children) || !other.children.containsAll(children))
+			return false;
+		if (!texts.containsAll(other.texts) || !other.texts.containsAll(texts))
 			return false;
 		if (name == null) {
 			if (other.name != null)
@@ -154,7 +188,11 @@ public class Elem {
 
 	@Override
 	public String toString() {
-		return "Ele [name=" + name + ", children=" + children + ", attrs=" + attrs + "]";
+		try {
+			return writer.writeValueAsString(this);
+		} catch (JsonProcessingException e) {
+			return null;
+		}
 	}
 
 }

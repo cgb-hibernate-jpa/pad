@@ -1,8 +1,12 @@
 package com.github.emailtohl.lib.xml;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -50,11 +54,18 @@ public class ElemTest {
 		
 		Elem a = new Elem(axml);
 		Elem b = new Elem(bxml);
-		assertEquals(a, b);
 		
-//		Set<Elem> set = new HashSet<Elem>();
-//		set.add(a);
-//		assertTrue(set.contains(b));
+		assertEquals(a, b);
+		assertEquals(a.attrs, b.attrs);
+		assertNotEquals(a.toString(), b.toString());
+		
+		assertEquals(a.hashCode(), b.hashCode());
+		assertEquals(a.attrs.hashCode(), b.attrs.hashCode());
+		
+		Set<Elem> set = new HashSet<Elem>();
+		set.add(a);
+		
+		assertTrue(set.contains(b));
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.github.emailtohl.lib.xml;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,9 +20,10 @@ public class Attrs extends HashMap<String, String> {
 		final int prime = 31;
 		int result = 1;
 		for (Map.Entry<String, String> e : super.entrySet()) {
-			result = prime * result + e.getKey().hashCode();
 			String val = e.getValue();
-			result = prime * result + ((val == null) ? 0 : val.hashCode());
+			if (StringUtils.hasText(val)) {
+				result = prime * result + val.trim().hashCode();
+			}
 		}
 		return result;
 	}
@@ -39,16 +41,34 @@ public class Attrs extends HashMap<String, String> {
 		}
 		Attrs other = (Attrs) obj;
 		// 若两个集合之间有差集，那么就看差集部分是否有值，若有值，则两者不相等
-		if (diff(other)) {
+		if (!diff(other)) {
 			return false;
 		}
-		// 差集比较没有差别后，就逐个对每个属性进行比较
-		// 此处空字符串和null都视为相等，只有两个字符串都有值且存在差异才视为不相等
-		for (Map.Entry<String, String> e : super.entrySet()) {
-			String thisVal = e.getValue();
-			String otherVal = other.get(e.getKey());
-			if (StringUtils.hasText(thisVal) && StringUtils.hasText(otherVal)) {
-				if (!thisVal.equals(otherVal)) {
+		// 差集比较没有差别后，就在交集中逐个对每个属性进行比较
+		return intersection(other);
+	}
+
+	/**
+	 * 在差集中查看是否有属性的值不为空，空字符串和null都视为空
+	 * 
+	 * @param other 另一个对比对象
+	 * @return 若差集中有属性不为空，则返回false，否则返回true
+	 */
+	private boolean diff(Attrs other) {
+		Set<String> thisKeySet = new HashSet<String>(super.keySet());
+		Set<String> otherKeySet = new HashSet<String>(other.keySet());
+		if (thisKeySet.removeAll(otherKeySet)) {
+			for (String key : thisKeySet) {
+				if (StringUtils.hasText(super.get(key))) {
+					return false;
+				}
+			}
+		}
+		thisKeySet = new HashSet<String>(super.keySet());
+		otherKeySet = new HashSet<String>(other.keySet());
+		if (otherKeySet.removeAll(thisKeySet)) {
+			for (String key : otherKeySet) {
+				if (StringUtils.hasText(other.get(key))) {
 					return false;
 				}
 			}
@@ -57,31 +77,30 @@ public class Attrs extends HashMap<String, String> {
 	}
 
 	/**
-	 * 对两个属性集合进行判断 先判断差集中是否有不一样的 如果有差集，则查看差集部分是否有值，若有则表示不一致
-	 * 
-	 * @param other 另一个属性
-	 * @return 若不一致则返回false
+	 * 在交集里面查找是否有不相等的属性，空字符串和null都视为相等
+	 * @param other 另一个对比对象
+	 * @return 若全部匹配，则返回true，否则返回false
 	 */
-	private boolean diff(Attrs other) {
-		Set<Map.Entry<String, String>> thisSet = super.entrySet();
-		Set<Map.Entry<String, String>> otherSet = other.entrySet();
-		if (thisSet.removeAll(otherSet)) {
-			for (Map.Entry<String, String> e : thisSet) {
-				if (StringUtils.hasText(e.getValue())) {
-					return true;
+	private boolean intersection(Attrs other) {
+		Set<String> thisKeySet = new HashSet<String>(super.keySet());
+		Set<String> otherKeySet = new HashSet<String>(other.keySet());
+		Set<String> keys;
+		if (thisKeySet.size() > otherKeySet.size()) {
+			thisKeySet.retainAll(otherKeySet);
+			keys = thisKeySet;
+		} else {
+			otherKeySet.retainAll(thisKeySet);
+			keys = otherKeySet;
+		}
+		for (String key : keys) {
+			String thisVal = super.get(key);
+			String otherVal = other.get(key);
+			if (StringUtils.hasText(thisVal) && StringUtils.hasText(otherVal)) {
+				if (!thisVal.trim().equals(otherVal.trim())) {
+					return false;
 				}
 			}
 		}
-		thisSet = super.entrySet();
-		otherSet = other.entrySet();
-		if (otherSet.removeAll(thisSet)) {
-			for (Map.Entry<String, String> e : otherSet) {
-				if (StringUtils.hasText(e.getValue())) {
-					return true;
-				}
-			}
-		}
-		return false;
+		return true;
 	}
-
 }
