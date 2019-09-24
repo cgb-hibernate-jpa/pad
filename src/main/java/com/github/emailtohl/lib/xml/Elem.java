@@ -30,7 +30,7 @@ import com.github.emailtohl.lib.exception.InnerDataStateException;
  * 使用场景，mock 以xml作为输入输出的接口：
  * 首先将预先收集的输入xml和输出xml收集起来；
  * 然后将输入的xml构造成本类的实例；
- * 最后将该实例和输出xml存储在Map<Elem, String>中，这样就能mock掉真实的接口
+ * 最后将该实例和输出xml存储在Map&lt;Elem, String&gt;中，这样就能mock掉真实的接口
  * 
  * @author helei
  *

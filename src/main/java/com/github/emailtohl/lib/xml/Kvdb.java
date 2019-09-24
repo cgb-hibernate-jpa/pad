@@ -36,7 +36,7 @@ import com.github.emailtohl.lib.exception.InvalidDataException;
 /**
  * key value本地存储库，使用场景主要是用于收集redis的数据以便于mock掉redis接口
  * 
- * @author helei
+ * @author HeLei
  */
 public class Kvdb implements Serializable {
 	/**
