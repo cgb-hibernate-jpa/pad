@@ -44,6 +44,10 @@ public class Kvdb implements Serializable {
 	 */
 	private static final long serialVersionUID = 1105747046663001195L;
 	/**
+	 * ConcurrentHashMap不能存储value为null的值，所以用特殊字符替代
+	 */
+	private final String NULL = "_null_";
+	/**
 	 * xml元素的名字，存储redis的字符串类型
 	 */
 	private final String tagString = "string";
@@ -120,7 +124,7 @@ public class Kvdb implements Serializable {
 	 * @param value 字符串值
 	 */
 	public void saveString(String key, String value) {
-		string.put(key, value == null ? "" : value);
+		string.put(key, value == null ? NULL : value);
 		saveToFile();
 	}
 
@@ -132,7 +136,7 @@ public class Kvdb implements Serializable {
 	 */
 	public String readString(String key) {
 		String value = string.get(key);
-		return value == null ? "" : value;
+		return NULL.equals(value) ? null : value;
 	}
 
 	/**
@@ -158,7 +162,7 @@ public class Kvdb implements Serializable {
 			hashValue = new ConcurrentHashMap<String, String>();
 			hash.put(key, hashValue);
 		}
-		hashValue.put(hashKey, value == null ? "" : value);
+		hashValue.put(hashKey, value == null ? NULL : value);
 		saveToFile();
 	}
 
@@ -174,7 +178,8 @@ public class Kvdb implements Serializable {
 		if (hashValue == null) {
 			return null;
 		}
-		return hashValue.get(hashKey);
+		String value = hashValue.get(hashKey);
+		return NULL.equals(value) ? null : value;
 	}
 
 	/**
@@ -186,6 +191,7 @@ public class Kvdb implements Serializable {
 	public void delHash(String key, String hashKey) {
 		ConcurrentHashMap<String, String> hashValue = hash.get(key);
 		if (hashValue != null) {
+			// the previous value associated with key, or null if there was no mapping for key
 			String res = hashValue.remove(hashKey);
 			if (res != null) {
 				saveToFile();
@@ -228,7 +234,7 @@ public class Kvdb implements Serializable {
 			setValue = new CopyOnWriteArraySet<String>();
 			set.put(key, setValue);
 		}
-		setValue.add(value == null ? "" : value);
+		setValue.add(value);
 		saveToFile();
 	}
 
@@ -267,7 +273,7 @@ public class Kvdb implements Serializable {
 			arrayValue = new CopyOnWriteArrayList<String>();
 			array.put(key, arrayValue);
 		}
-		arrayValue.add(value == null ? "" : value);
+		arrayValue.add(value);
 		saveToFile();
 	}
 
@@ -368,7 +374,8 @@ public class Kvdb implements Serializable {
 				seri.getDomConfig().setParameter("format-pretty-print", true);
 				LSOutput out = ls.createLSOutput();
 				out.setEncoding("UTF-8");
-				FileOutputStream stream = new FileOutputStream(path);
+				File f = availableFile(path);
+				FileOutputStream stream = new FileOutputStream(f);
 				out.setByteStream(stream);
 				seri.write(document, out);
 				stream.close();
@@ -377,7 +384,33 @@ public class Kvdb implements Serializable {
 			}
 		}
 	}
-
+	
+	/**
+	 * 获取可用的输出文件
+	 * 
+	 * @param path 文件路径
+	 * @return 可写入的文件
+	 * @throws IOException 写入异常
+	 */
+	private File availableFile(String path) throws IOException {
+		File f = new File(path);
+		File dir = f.getParentFile();
+		boolean ok = true;
+		if (!dir.exists()) {
+			ok = dir.mkdirs();
+		}
+		if (!ok) {
+			throw new IOException("收集redis数据需要创建目录：" + dir.getAbsolutePath() + "，但是创建失败");
+		}
+		if (!f.exists()) {
+			ok = f.createNewFile();
+		}
+		if (!ok) {
+			throw new IOException("收集redis数据需要创建文件：" + f.getAbsolutePath() + "，但是创建失败");
+		}
+		return f;
+	}
+	
 	/**
 	 * 根据路径加载数据到本类实例中
 	 * @param path 数据存储的文件

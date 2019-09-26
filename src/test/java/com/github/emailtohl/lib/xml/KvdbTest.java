@@ -39,6 +39,11 @@ public class KvdbTest {
 		db.delString(key);
 		res = db.readString(key);
 		assertFalse(StringUtils.hasText(res));
+		
+		value = null;
+		db.saveString(key, value);
+		res = db.readString(key);
+		assertNull(res);
 	}
 
 	@Test
@@ -59,6 +64,12 @@ public class KvdbTest {
 		res = db.readHash(key, hkey);
 		assertEquals(value, res);
 		assertNotNull(db.readHashAll(key));
+		
+		
+		value = null;
+		db.saveHash(key, hkey, value);
+		res = db.readHash(key, hkey);
+		assertNull(res);
 	}
 
 	@Test
