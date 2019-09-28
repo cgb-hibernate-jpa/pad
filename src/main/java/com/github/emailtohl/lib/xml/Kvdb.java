@@ -400,13 +400,13 @@ public class Kvdb implements Serializable {
 			ok = dir.mkdirs();
 		}
 		if (!ok) {
-			throw new IOException("收集redis数据需要创建目录：" + dir.getAbsolutePath() + "，但是创建失败");
+			throw new IOException("Failed to create data store directory:" + dir.getAbsolutePath());
 		}
 		if (!f.exists()) {
 			ok = f.createNewFile();
 		}
 		if (!ok) {
-			throw new IOException("收集redis数据需要创建文件：" + f.getAbsolutePath() + "，但是创建失败");
+			throw new IOException("Failed to create data store file:" + f.getAbsolutePath());
 		}
 		return f;
 	}
