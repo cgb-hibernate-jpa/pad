@@ -3,7 +3,6 @@ package com.github.emailtohl.lib.filter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -12,6 +11,7 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
  * 包装HttpServletResponse，以便于能从其提取出相应的内容
+ * 调用本过滤器前，不能调用HttpServletResponse#getOutputStream()
  * 
  * @author HeLei
  */
@@ -21,35 +21,29 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 
 	public CacheResponseWrapper(HttpServletResponse response) throws IOException {
 		super(response);
+		// 创建一个自定义的输出流，当此流的write方法被调用时，会将数据存储一份到内存中
+		streamWrapper = new OutputStreamWrapper(response.getOutputStream());
+		// 同样创建一个自定义的PrintWriter对象用于getWriter返回，当此对象的print方法被调用时，它最终会调用到输出流的write方法上，数据也会存储一份到内存中
+		writer = new PrintWriter(streamWrapper);
 	}
 
 	@Override
-	public synchronized ServletOutputStream getOutputStream() throws IOException {
-		if (writer != null)
-			throw new IllegalStateException("getWriter() already called.");
-		if (streamWrapper == null)
-			// 创建一个自定义的输出流，当此流的write方法被调用时，会将数据存储一份到内存中
-			streamWrapper = new OutputStreamWrapper(super.getOutputStream());
+	public ServletOutputStream getOutputStream() throws IOException {
 		return streamWrapper;
 	}
 
 	@Override
-	public synchronized PrintWriter getWriter() throws IOException {
-		if (writer == null && streamWrapper != null)
-			throw new IllegalStateException("getOutputStream() already called.");
-		if (writer == null) {
-			// 创建一个自定义的输出流，当此流的write方法被调用时，会将数据存储一份到内存中
-			streamWrapper = new OutputStreamWrapper(super.getOutputStream());
-			// 同样创建一个自定义的PrintWriter对象用于getWriter返回，当此对象的print方法被调用时，它最终会调用到输出流的write方法上，数据也会存储一份到内存中
-			writer = new PrintWriter(new WriterWrapper(streamWrapper));
-		}
+	public PrintWriter getWriter() throws IOException {
 		return writer;
 	}
 
 	/**
 	 * @return 返回内存中的内容
+	 * @throws IOException 刷新数据时出现错误
 	 */
-	public byte[] getContent() {
+	public byte[] getContent() throws IOException {
+		// writer刷新时会不仅刷新自己的缓存，而且会将数据刷新到streamWrapper流中
+		writer.flush();
 		return streamWrapper.getByteArrayOutputStream().toByteArray();
 	}
 
@@ -82,6 +76,11 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 		}
 
 		@Override
+		public void flush() throws IOException {
+			outputStream.flush();
+		}
+
+		@Override
 		public void close() throws IOException {
 			outputStream.close();
 			memoryStream.close();
@@ -89,29 +88,4 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 
 	}
 
-	private class WriterWrapper extends Writer {
-		private ServletOutputStream stream;
-
-		WriterWrapper(ServletOutputStream stream) {
-			this.stream = stream;
-		}
-
-		@Override
-		public void write(char[] cbuf, int off, int len) throws IOException {
-			for (int i = off; i < off + len; i++) {
-				stream.write((int) cbuf[i]);
-			}
-		}
-
-		@Override
-		public void flush() throws IOException {
-			stream.flush();
-		}
-
-		@Override
-		public void close() throws IOException {
-			stream.close();
-		}
-
-	}
 }
