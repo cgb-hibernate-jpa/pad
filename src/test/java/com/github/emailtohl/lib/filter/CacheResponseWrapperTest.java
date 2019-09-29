@@ -27,7 +27,9 @@ public class CacheResponseWrapperTest {
 					throws IOException, ServletException {
 				CacheResponseWrapper resp = new CacheResponseWrapper((HttpServletResponse) response);
 				chain.doFilter(request, resp);
-				assertEquals("hello bar", new String(resp.getContent()));
+				String charset = resp.getCharacterEncoding();
+				String respStr = new String(resp.getContent(), charset);
+				assertEquals("hello bar", respStr);
 			}
 		};
 		MockFilterChain chain = new MockFilterChain(new ServletForTest());

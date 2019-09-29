@@ -21,19 +21,28 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 
 	public CacheResponseWrapper(HttpServletResponse response) throws IOException {
 		super(response);
-		// 创建一个自定义的输出流用于getOutputStream返回，当此流的write方法被调用时，会将数据存储一份到内存中
-		streamWrapper = new OutputStreamWrapper(response.getOutputStream());
-		// 同样创建一个自定义的PrintWriter对象用于getWriter返回，当此对象的print方法被调用时，它最终会调用到输出流的write方法上，数据也会存储一份到内存中
-		writer = new PrintWriter(new WriterWrapper(streamWrapper));
 	}
 
 	@Override
-	public ServletOutputStream getOutputStream() throws IOException {
+	public synchronized ServletOutputStream getOutputStream() throws IOException {
+		if (writer != null)
+			throw new IllegalStateException("getWriter() already called.");
+		if (streamWrapper == null)
+			// 创建一个自定义的输出流，当此流的write方法被调用时，会将数据存储一份到内存中
+			streamWrapper = new OutputStreamWrapper(super.getOutputStream());
 		return streamWrapper;
 	}
 
 	@Override
-	public PrintWriter getWriter() throws IOException {
+	public synchronized PrintWriter getWriter() throws IOException {
+		if (writer == null && streamWrapper != null)
+			throw new IllegalStateException("getOutputStream() already called.");
+		if (writer == null) {
+			// 创建一个自定义的输出流，当此流的write方法被调用时，会将数据存储一份到内存中
+			streamWrapper = new OutputStreamWrapper(super.getOutputStream());
+			// 同样创建一个自定义的PrintWriter对象用于getWriter返回，当此对象的print方法被调用时，它最终会调用到输出流的write方法上，数据也会存储一份到内存中
+			writer = new PrintWriter(new WriterWrapper(streamWrapper));
+		}
 		return writer;
 	}
 
@@ -80,7 +89,7 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 
 	}
 
-	class WriterWrapper extends Writer {
+	private class WriterWrapper extends Writer {
 		private ServletOutputStream stream;
 
 		WriterWrapper(ServletOutputStream stream) {
