@@ -117,7 +117,7 @@ public class Elem {
 	/**
 	 * 将org.w3c.dom.Element子节点的数据填充到本类实例对应的子节点中
 	 * 
-	 * @param element org.w3c.dom.Element
+	 * @param nodeList org.w3c.dom.Element
 	 */
 	private void fillChildren(NodeList nodeList) {
 		for (int i = 0; i < nodeList.getLength(); i++) {

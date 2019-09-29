@@ -239,7 +239,7 @@ public abstract class EntityBase implements Serializable, Cloneable {
 	
 	/**
 	 * 获取值类型的Fields
-	 * @param clz EntityBase的子类
+	 * @param clazz EntityBase的子类
 	 * @return 值类型的Fields
 	 */
 	@SuppressWarnings("unchecked")
