@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
  * 包装HttpServletResponse，以便于能从其提取出相应的内容
- * 调用本过滤器前，不能调用HttpServletResponse#getOutputStream()
  * 
  * @author HeLei
  */
