@@ -28,12 +28,22 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 	}
 
 	@Override
-	public ServletOutputStream getOutputStream() throws IOException {
+	public synchronized ServletOutputStream getOutputStream() throws IOException {
+		// 创建数据流的同时创建PrintWriter，可以通过PrintWriter来判断是否已创建了数据流
+		if (writer == null) {
+			// 输出流为自定义的，当此流的write方法被调用时，会将数据存储一份到内存中
+			streamWrapper = new OutputStreamWrapper(super.getOutputStream());
+			// PrintWriter使用自定义的数据流
+			writer = new PrintWriter(streamWrapper);
+		}
 		return streamWrapper;
 	}
 
 	@Override
-	public PrintWriter getWriter() throws IOException {
+	public synchronized PrintWriter getWriter() throws IOException {
+		if (writer == null) {
+			getOutputStream();
+		}
 		return writer;
 	}
 
@@ -42,7 +52,7 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 	 * @throws IOException 刷新数据时出现错误
 	 */
 	public byte[] getContent() throws IOException {
-		// writer刷新时会不仅刷新自己的缓存，而且会将数据刷新到streamWrapper流中
+		// writer有自己的缓存，获取内容前需先刷新
 		writer.flush();
 		return streamWrapper.getByteArrayOutputStream().toByteArray();
 	}
