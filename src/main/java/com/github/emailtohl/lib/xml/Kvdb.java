@@ -30,6 +30,7 @@ import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSOutput;
 import org.w3c.dom.ls.LSSerializer;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import com.github.emailtohl.lib.exception.InvalidDataException;
 
@@ -418,8 +419,20 @@ public class Kvdb implements Serializable {
 	private void load(String path) {
 		try {
 			DocumentBuilder b = factory.newDocumentBuilder();
-			FileInputStream in = new FileInputStream(path);
-			Document document = b.parse(in);
+			FileInputStream in = null;
+			Document document = null;
+			try {
+				in = new FileInputStream(path);
+				document = b.parse(in);
+			} catch (SAXParseException saxpe) {
+				saveToFile();
+				in = new FileInputStream(path);
+				document = b.parse(in);
+			} finally {
+				if (in != null) {
+					in.close();
+				}
+			}
 			Element root = document.getDocumentElement();
 			NodeList nodeList = root.getChildNodes();
 			for (int i = 0; i < nodeList.getLength(); i++) {
