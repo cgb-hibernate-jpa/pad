@@ -14,5 +14,12 @@ public class PackageScannerTest {
 		assertFalse(set.isEmpty());
 		assertTrue(set.contains(PackageScanner.class));
 	}
+	
+	@Test
+	public void testScanJar() {
+		Set<Class<?>> set = PackageScanner.getClasses("org.junit");
+		assertFalse(set.isEmpty());
+		assertTrue(set.contains(Test.class));
+	}
 
 }

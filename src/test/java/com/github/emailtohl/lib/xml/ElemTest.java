@@ -29,8 +29,8 @@ public class ElemTest {
 				"	<groupId>com.github.emailtohl</groupId>\r\n" + 
 				"	<artifactId>lib</artifactId>\r\n" + 
 				"	<properties>\r\n" + 
+				"		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>" + 
 				"		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\r\n" + 
-				"		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>\r\n" + 
 				"	</properties>\r\n" + 
 				"</project>";
 		String bxml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + 

@@ -1,6 +1,5 @@
 package com.github.emailtohl.lib.util;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -20,6 +19,11 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.github.emailtohl.lib.exception.InnerDataStateException;
+
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
@@ -30,11 +34,17 @@ import okhttp3.OkHttpClient;
  * 
  * @author HeLei
  */
-public class HttpsUtil {
+public class HttpsUnsafeUtil {
+	private static final Logger logger = LogManager.getLogger();
 	private static final ConcurrentHashMap<String, List<Cookie>> COOKIE_STORE = new ConcurrentHashMap<>();
 
-	private HttpsUtil() {}
+	private HttpsUnsafeUtil() {
+	}
 
+	/**
+	 * 获取一个可以使用https的OkHttpClient
+	 * @return 返回一个OkHttpClient
+	 */
 	public static OkHttpClient getOkHttpClient() {
 		return new OkHttpClient.Builder().hostnameVerifier(getHostnameVerifier())
 				.sslSocketFactory(getDefaultSSLSocketFactory(), getX509TrustManager()).cookieJar(new CookieJar() {// 这里可以做cookie传递，保存等操作
@@ -51,6 +61,12 @@ public class HttpsUtil {
 				}).build();
 	}
 
+	/**
+	 * 获取SSLSocketFactory
+	 * @param certificates 证书的输入流
+	 * @return 返回一个SSLSocketFactory
+	 * @throws InnerDataStateException 任何异常将转成InnerDataStateException抛出
+	 */
 	public static SSLSocketFactory getSSLSocketFactory(InputStream... certificates) {
 		try {
 			// 用我们的证书创建一个keystore
@@ -61,12 +77,8 @@ public class HttpsUtil {
 			for (InputStream certificate : certificates) {
 				String certificateAlias = "server" + Integer.toString(index++);
 				keyStore.setCertificateEntry(certificateAlias, certificateFactory.generateCertificate(certificate));
-				try {
-					if (certificate != null) {
-						certificate.close();
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
+				if (certificate != null) {
+					certificate.close();
 				}
 			}
 			// 创建一个trustmanager，只信任我们创建的keystore
@@ -77,11 +89,15 @@ public class HttpsUtil {
 			sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
 			return sslContext.getSocketFactory();
 		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+			logger.catching(e);
+			throw new InnerDataStateException(e);
 		}
 	}
 
+	/**
+	 * 获取X509TrustManager证书管理器，此不对客户端和服务端做校验
+	 * @return 返回一个X509TrustManager
+	 */
 	public static X509TrustManager getX509TrustManager() {
 		return new X509TrustManager() {
 			public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
@@ -96,16 +112,26 @@ public class HttpsUtil {
 		};
 	}
 
+	/**
+	 * 获取SSLSocketFactory
+	 * @return 返回一个默认的SSLSocketFactory
+	 * @throws InnerDataStateException 任何异常将转成InnerDataStateException抛出
+	 */
 	public static SSLSocketFactory getDefaultSSLSocketFactory() {
 		try {
 			SSLContext sslContext = SSLContext.getInstance("TLS");
 			sslContext.init(null, new TrustManager[] { getX509TrustManager() }, null);
 			return sslContext.getSocketFactory();
 		} catch (GeneralSecurityException e) {
-			throw new AssertionError();
+			logger.catching(e);
+			throw new InnerDataStateException(e);
 		}
 	}
 
+	/**
+	 * 获取HostnameVerifier，但不对hostname和SSLSession做校验
+	 * @return 返回HostnameVerifier
+	 */
 	public static HostnameVerifier getHostnameVerifier() {
 		return new HostnameVerifier() {
 			@Override
