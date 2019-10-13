@@ -150,10 +150,9 @@ public class Elem {
 	}
 
 	private int childreHashCode() {
-		final int prime = 31;
 		int result = 1;
 		for (Elem e : children) {
-			result = prime * result + e.hashCode();
+			result = result + e.hashCode();
 		}
 		return result;
 	}

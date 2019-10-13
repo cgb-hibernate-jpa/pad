@@ -47,39 +47,39 @@ public class Kvdb implements Serializable {
 	/**
 	 * ConcurrentHashMap不能存储value为null的值，所以用特殊字符替代
 	 */
-	private final String NULL = "_null_";
+	private static final String NULL = "_null_";
 	/**
 	 * xml元素的名字，存储redis的字符串类型
 	 */
-	private final String tagString = "string";
+	private static final String tagString = "string";
 	/**
 	 * xml元素的名字，存储redis的散列类型
 	 */
-	private final String tagHash = "hash";
+	private static final String tagHash = "hash";
 	/**
 	 * xml元素的名字，存储redis的集合类型
 	 */
-	private final String tagSet = "set";
+	private static final String tagSet = "set";
 	/**
 	 * xml元素的名字，存储redis的列表类型
 	 */
-	private final String tagArray = "array";
+	private static final String tagArray = "array";
 	/**
 	 * xml元素的名字，存储每个键值对的元素
 	 */
-	private final String tagEntry = "entry";
+	private static final String tagEntry = "entry";
 	/**
 	 * xml元素的名字，存储key的元素
 	 */
-	private final String tagKey = "key";
+	private static final String tagKey = "key";
 	/**
 	 * xml元素的名字，存储value的元素
 	 */
-	private final String tagValue = "value";
+	private static final String tagValue = "value";
 	/**
 	 * xml元素的名字，存储多个value的元素
 	 */
-	private final String tagValues = "values";
+	private static final String tagValues = "values";
 
 	/**
 	 * xml配置文件工厂
@@ -161,7 +161,8 @@ public class Kvdb implements Serializable {
 		ConcurrentHashMap<String, String> hashValue = hash.get(key);
 		if (hashValue == null) {
 			hashValue = new ConcurrentHashMap<String, String>();
-			hash.put(key, hashValue);
+			ConcurrentHashMap<String, String> previous = hash.putIfAbsent(key, hashValue);
+			hashValue = previous == null ? hashValue : previous;
 		}
 		hashValue.put(hashKey, value == null ? NULL : value);
 		saveToFile();
@@ -233,7 +234,8 @@ public class Kvdb implements Serializable {
 		CopyOnWriteArraySet<String> setValue = set.get(key);
 		if (setValue == null) {
 			setValue = new CopyOnWriteArraySet<String>();
-			set.put(key, setValue);
+			CopyOnWriteArraySet<String> previous = set.putIfAbsent(key, setValue);
+			setValue = previous == null ? setValue : previous;
 		}
 		setValue.add(value);
 		saveToFile();
@@ -272,7 +274,8 @@ public class Kvdb implements Serializable {
 		CopyOnWriteArrayList<String> arrayValue = array.get(key);
 		if (arrayValue == null) {
 			arrayValue = new CopyOnWriteArrayList<String>();
-			array.put(key, arrayValue);
+			CopyOnWriteArrayList<String> previous = array.putIfAbsent(key, arrayValue);
+			arrayValue = previous == null ? arrayValue : previous;
 		}
 		arrayValue.add(value);
 		saveToFile();
@@ -459,7 +462,8 @@ public class Kvdb implements Serializable {
 							ConcurrentHashMap<String, String> hashValue = hash.get(hashKey);
 							if (hashValue == null) {
 								hashValue = new ConcurrentHashMap<String, String>();
-								hash.put(hashKey, hashValue);
+								ConcurrentHashMap<String, String> previous = hash.putIfAbsent(hashKey, hashValue);
+								hashValue = previous == null ? hashValue : previous;
 							}
 							NodeList items = ekv[1].getChildNodes();
 							for (int k = 0; k < items.getLength(); k++) {
@@ -484,7 +488,8 @@ public class Kvdb implements Serializable {
 							CopyOnWriteArraySet<String> setValue = set.get(setKey);
 							if (setValue == null) {
 								setValue = new CopyOnWriteArraySet<String>();
-								set.put(setKey, setValue);
+								CopyOnWriteArraySet<String> previous = set.putIfAbsent(setKey, setValue);
+								setValue = previous == null ? setValue : previous;
 							}
 							NodeList valuesEle = ekv[1].getChildNodes();
 							for (int k = 0; k < valuesEle.getLength(); k++) {
@@ -508,7 +513,8 @@ public class Kvdb implements Serializable {
 							CopyOnWriteArrayList<String> arrayValue = array.get(setKey);
 							if (arrayValue == null) {
 								arrayValue = new CopyOnWriteArrayList<String>();
-								array.put(setKey, arrayValue);
+								CopyOnWriteArrayList<String> previous = array.put(setKey, arrayValue);
+								arrayValue = previous == null ? arrayValue : previous;
 							}
 							NodeList valuesEle = ekv[1].getChildNodes();
 							for (int k = 0; k < valuesEle.getLength(); k++) {
