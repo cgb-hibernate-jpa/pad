@@ -321,10 +321,10 @@ public class Kvdb implements Serializable {
 				entryEle.appendChild(keyEle);
 				Text keyText = document.createTextNode(mapEntry.getKey());
 				keyEle.appendChild(keyText);
-				Element valueEle = document.createElement(tagValues);
-				entryEle.appendChild(valueEle);
+				Element valuesEle = document.createElement(tagValues);
+				entryEle.appendChild(valuesEle);
 				for (Entry<String, String> entry : mapEntry.getValue().entrySet()) {
-					valueEle.appendChild(createEntry(document, entry.getKey(), entry.getValue()));
+					valuesEle.appendChild(createEntry(document, entry.getKey(), entry.getValue()));
 				}
 			}
 			for (Entry<String, CopyOnWriteArraySet<String>> setEntry : set.entrySet()) {
@@ -334,11 +334,11 @@ public class Kvdb implements Serializable {
 				entryEle.appendChild(keyEle);
 				Text keyText = document.createTextNode(setEntry.getKey());
 				keyEle.appendChild(keyText);
-				Element valueEles = document.createElement(tagValues);
-				entryEle.appendChild(valueEles);
+				Element valuesEle = document.createElement(tagValues);
+				entryEle.appendChild(valuesEle);
 				for (String item : setEntry.getValue()) {
 					Element valueEle = document.createElement(tagValue);
-					valueEles.appendChild(valueEle);
+					valuesEle.appendChild(valueEle);
 					Text valueText = document.createTextNode(item);
 					valueEle.appendChild(valueText);
 				}
@@ -350,11 +350,11 @@ public class Kvdb implements Serializable {
 				entryEle.appendChild(keyEle);
 				Text keyText = document.createTextNode(arrayEntry.getKey());
 				keyEle.appendChild(keyText);
-				Element valueEles = document.createElement(tagValues);
-				entryEle.appendChild(valueEles);
+				Element valuesEle = document.createElement(tagValues);
+				entryEle.appendChild(valuesEle);
 				for (String item : arrayEntry.getValue()) {
 					Element valueEle = document.createElement(tagValue);
-					valueEles.appendChild(valueEle);
+					valuesEle.appendChild(valueEle);
 					Text valueText = document.createTextNode(item);
 					valueEle.appendChild(valueText);
 				}
@@ -370,7 +370,7 @@ public class Kvdb implements Serializable {
 	 */
 	private void saveToFile() {
 		Document document = buildDoc();
-		synchronized (getClass()) {
+		synchronized (Kvdb.class) {
 			try {
 				DOMImplementation impl = document.getImplementation();
 				DOMImplementationLS ls = (DOMImplementationLS) impl.getFeature("LS", "3.0");
@@ -513,7 +513,7 @@ public class Kvdb implements Serializable {
 							CopyOnWriteArrayList<String> arrayValue = array.get(setKey);
 							if (arrayValue == null) {
 								arrayValue = new CopyOnWriteArrayList<String>();
-								CopyOnWriteArrayList<String> previous = array.put(setKey, arrayValue);
+								CopyOnWriteArrayList<String> previous = array.putIfAbsent(setKey, arrayValue);
 								arrayValue = previous == null ? arrayValue : previous;
 							}
 							NodeList valuesEle = ekv[1].getChildNodes();
