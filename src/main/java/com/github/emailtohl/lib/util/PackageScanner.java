@@ -43,7 +43,7 @@ public final class PackageScanner {
 		String packageDirName = packageName.replace('.', '/');
 		// logger.debug(new ClassPathResource(packageDirName).getURI());
 		// 定义一个枚举的集合 并进行循环来处理这个目录下的内容
-		Enumeration<URL> dirs = null;
+		Enumeration<URL> dirs;
 		try {
 			dirs = Thread.currentThread().getContextClassLoader().getResources(packageDirName);
 		} catch (IOException e) {
@@ -60,7 +60,7 @@ public final class PackageScanner {
 			if ("file".equals(protocol)) {
 				logger.debug("scan file system");
 				// 获取包的物理路径
-				String filePath = null;
+				String filePath;
 				try {
 					filePath = URLDecoder.decode(url.getFile(), Charset.defaultCharset().name());
 				} catch (UnsupportedEncodingException e) {
@@ -78,7 +78,7 @@ public final class PackageScanner {
 				try {
 					jar = ((JarURLConnection) url.openConnection()).getJarFile();
 				} catch (IOException e) {
-					logger.warn(jar == null ? "" : jar.getName() + " jar scan error", e);
+					logger.warn("jar scan error", e);
 					continue;
 				}
 				findClassesByJar(jar, packageName, true, classes);
@@ -110,22 +110,24 @@ public final class PackageScanner {
 				return (recursive && file.isDirectory()) || (file.getName().endsWith(".class"));
 			}
 		});
-		// 循环所有文件
-		for (File file : dirfiles) {
-			// 如果是目录 则继续扫描
-			if (file.isDirectory()) {
-				findClassesByFileSystem(packageName + "." + file.getName(), file.getAbsolutePath(), recursive, classes);
-			} else {
-				// 如果是java类文件 去掉后面的.class 只留下类名
-				String className = file.getName().substring(0, file.getName().length() - 6);
-				try {
-					// 添加到集合中去
-					// classes.add(Class.forName(packageName + '.' + className));
-					// 这里用forName有一些不好，会触发static方法，没有使用classLoader的load干净
-					classes.add(
-							Thread.currentThread().getContextClassLoader().loadClass(packageName + '.' + className));
-				} catch (ClassNotFoundException e) {
-					logger.info("添加用户自定义视图类错误 找不到此类的.class文件", e);
+		if (dirfiles instanceof File[]) {
+			// 循环所有文件
+			for (File file : dirfiles) {
+				// 如果是目录 则继续扫描
+				if (file.isDirectory()) {
+					findClassesByFileSystem(packageName + "." + file.getName(), file.getAbsolutePath(), recursive, classes);
+				} else {
+					// 如果是java类文件 去掉后面的.class 只留下类名
+					String className = file.getName().substring(0, file.getName().length() - 6);
+					try {
+						// 添加到集合中去
+						// classes.add(Class.forName(packageName + '.' + className));
+						// 这里用forName有一些不好，会触发static方法，没有使用classLoader的load干净
+						classes.add(
+								Thread.currentThread().getContextClassLoader().loadClass(packageName + '.' + className));
+					} catch (ClassNotFoundException e) {
+						logger.info("添加用户自定义视图类错误 找不到此类的.class文件", e);
+					}
 				}
 			}
 		}

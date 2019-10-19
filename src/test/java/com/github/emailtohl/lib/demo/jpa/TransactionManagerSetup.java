@@ -103,7 +103,7 @@ public class TransactionManagerSetup {
         }
     }
 
-    public void stop() throws Exception {
+    public void stop() {
         logger.fine("Stopping database connection pool");
         datasource.close();
         TransactionManagerServices.getTransactionManager().shutdown();

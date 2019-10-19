@@ -123,7 +123,7 @@ public class KeyGenerator {
 	 * 计算逆元需要使用成员变量，为了避免使用同步锁，故创建内部类
 	 * @author helei
 	 */
-	private class Euclid {
+	private static class Euclid {
 		private BigInteger fn, e, x, y, d;// x，y成员变量，用于保存generateD()计算时的中间值
 		Euclid(BigInteger fn, BigInteger e) {
 			this.fn = fn;

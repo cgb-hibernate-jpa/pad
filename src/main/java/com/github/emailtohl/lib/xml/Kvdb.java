@@ -423,7 +423,7 @@ public class Kvdb implements Serializable {
 		try {
 			DocumentBuilder b = factory.newDocumentBuilder();
 			FileInputStream in = null;
-			Document document = null;
+			Document document;
 			try {
 				in = new FileInputStream(path);
 				document = b.parse(in);

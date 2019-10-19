@@ -90,9 +90,7 @@ public class Elem {
 			InputStream inputStream = new ByteArrayInputStream(xmlContent.getBytes());
 			Document document = builder.parse(inputStream);
 			return document.getDocumentElement();
-		} catch (ParserConfigurationException e) {
-			throw new InnerDataStateException(e);
-		} catch (IOException e) {
+		} catch (ParserConfigurationException | IOException e) {
 			throw new InnerDataStateException(e);
 		}
 	}

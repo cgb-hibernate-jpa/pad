@@ -26,7 +26,7 @@ import org.springframework.http.HttpHeaders;
  */
 public class CompressionFilter implements Filter {
 	private static final Logger log = LogManager.getLogger();
-	private final String gzip = "gzip";
+	private static final String gzip = "gzip";
 
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -56,7 +56,7 @@ public class CompressionFilter implements Filter {
 	}
 
 	@Override
-	public void init(FilterConfig filterConfig) throws ServletException {
+	public void init(FilterConfig filterConfig) {
 	}
 
 	@Override
@@ -140,7 +140,7 @@ public class CompressionFilter implements Filter {
 		}
 	}
 
-	private class GZIPServletOutputStream extends ServletOutputStream {
+	private static class GZIPServletOutputStream extends ServletOutputStream {
 		private final ServletOutputStream servletOutputStream;
 		private final GZIPOutputStream gzipStream;
 

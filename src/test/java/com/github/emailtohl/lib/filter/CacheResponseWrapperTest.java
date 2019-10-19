@@ -39,7 +39,7 @@ public class CacheResponseWrapperTest {
 		request.addParameter("name", "bar");
 		filter.doFilter(request, response, chain);
 
-		assertEquals("hello bar", new String(response.getContentAsString()));
+		assertEquals("hello bar", response.getContentAsString());
 	}
 
 }

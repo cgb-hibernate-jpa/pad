@@ -114,7 +114,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(foo);
@@ -137,7 +137,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(bar);
@@ -160,7 +160,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(baz);
@@ -183,7 +183,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(qux);
@@ -207,7 +207,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(creditCard);
@@ -231,7 +231,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(bankAccount);
@@ -254,7 +254,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(sup);
@@ -277,7 +277,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(sub);
@@ -302,7 +302,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(purpleOutfit);
@@ -327,7 +327,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(orangeOutfit);
@@ -351,7 +351,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(purpleOutfitBid);
@@ -376,7 +376,7 @@ class Entities {
 		Long id = null;
 		try {
 			id = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (id == null) {
 			em.persist(orangeOutfitBid);
@@ -398,13 +398,13 @@ class Entities {
 		ClientDetails entity = null;
 		try {
 			entity = em.createQuery(q).getSingleResult();
-		} catch (NoResultException e) {
+		} catch (NoResultException ignored) {
 		}
 		if (entity == null) {
 			em.persist(clientDetails);
 			entity = clientDetails;
 		}
 		em.getTransaction().commit();
-		return clientDetails;
+		return entity;
 	}
 }

@@ -48,19 +48,18 @@ public class CacheResponseWrapper extends HttpServletResponseWrapper {
 
 	/**
 	 * @return 返回内存中的内容
-	 * @throws IOException 刷新数据时出现错误
 	 */
-	public byte[] getContent() throws IOException {
+	public byte[] getContent() {
 		// writer有自己的缓存，获取内容前需先刷新
 		writer.flush();
 		return streamWrapper.getByteArrayOutputStream().toByteArray();
 	}
 
-	private class OutputStreamWrapper extends ServletOutputStream {
+	private static class OutputStreamWrapper extends ServletOutputStream {
 		private ServletOutputStream outputStream;
 		private ByteArrayOutputStream memoryStream = new ByteArrayOutputStream();
 
-		OutputStreamWrapper(ServletOutputStream servletOutputStream) throws IOException {
+		OutputStreamWrapper(ServletOutputStream servletOutputStream) {
 			this.outputStream = servletOutputStream;
 		}
 

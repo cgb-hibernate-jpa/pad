@@ -3,6 +3,7 @@ package com.github.emailtohl.lib.util;
 import java.io.IOException;
 import java.net.ConnectException;
 
+import okhttp3.ResponseBody;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,9 +29,10 @@ public class HttpsUnsafeUtilTest {
 		try {
 			Response response = client.newCall(request).execute();
 			if (response.isSuccessful()) {
-				System.out.println(response.body().string());
+				ResponseBody resp = response.body();
+				System.out.println(resp == null ? "" : resp.string());
 			}
-		} catch (ConnectException e) {}
+		} catch (ConnectException ignored) {}
 		
 	}
 

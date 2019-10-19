@@ -400,7 +400,7 @@ public class EntityInspectorTest {
 			double d1;
 			Double d2 = new Double(0.0);
 			long l1;
-			Long l2 = new Long(0l);
+			Long l2 = new Long(0L);
 			LocalDate now1 = LocalDate.now();
 			LocalTime now2 = LocalTime.now();
 			Instant now3 = Instant.now();
@@ -412,12 +412,12 @@ public class EntityInspectorTest {
 		Bar src = new Bar(), tar = new Bar();
 		src.d1 = 1.1;
 		src.d2 = new Double(1.1);
-		src.l1 = 1l;
-		src.l2 = new Long(1l);
-		src.now1 = src.now1.minusYears(1l);
-		src.now2 = src.now2.minusHours(1l);
-		src.now3 = src.now3.minusSeconds(1000l);
-		src.now4 = src.now4.minusYears(1l);
+		src.l1 = 1L;
+		src.l2 = new Long(1L);
+		src.now1 = src.now1.minusYears(1L);
+		src.now2 = src.now2.minusHours(1L);
+		src.now3 = src.now3.minusSeconds(1000L);
+		src.now4 = src.now4.minusYears(1L);
 		src.now5 = Date.from(src.now3);
 		src.now6.set(Calendar.YEAR, src.now1.getYear());
 		src.s1 = 1;

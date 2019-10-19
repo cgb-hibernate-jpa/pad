@@ -136,7 +136,7 @@ public class QueryRepositoryTest extends TestEnvironment {
 	
 	/**
 	 * 最常见的关联关系的查找测试，包括相互引用
-	 * @throws JsonProcessingException
+	 * @throws JsonProcessingException 解析异常测试失败
 	 */
 	@Test
 	public void testGetPredicates1() throws JsonProcessingException {
@@ -145,7 +145,7 @@ public class QueryRepositoryTest extends TestEnvironment {
 		CriteriaBuilder b = em.getCriteriaBuilder();
 		CriteriaQuery<Item> q = b.createQuery(Item.class);
 		Root<Item> r = q.from(Item.class);
-		Item example = (Item) purpleOutfit.clone();
+		Item example = purpleOutfit.clone();
 		Set<Predicate> predicates = itemRepo.getPredicates(example, r, b);
 		assertTrue(predicates.size() > 0);
 		
@@ -160,7 +160,7 @@ public class QueryRepositoryTest extends TestEnvironment {
 	
 	/**
 	 * 具有嵌入式Id类型，以及自定义比较的测试，此处Id字段存在反过来引用的情况
-	 * @throws JsonProcessingException
+	 * @throws JsonProcessingException 解析异常测试失败
 	 */
 	@Test
 	public void testGetPredicates2() throws JsonProcessingException {

@@ -47,11 +47,12 @@ public class Crypter {
 			pairgen = KeyPairGenerator.getInstance("RSA");
 		} catch (NoSuchAlgorithmException e) {
 			logger.fatal("RSA密钥创建失败", e);
+			throw new IllegalStateException(e);
 		}
 		SecureRandom random = new SecureRandom();
+		assert pairgen != null;
 		pairgen.initialize(length, random);
-		KeyPair keyPair = pairgen.generateKeyPair();
-		return keyPair;
+		return pairgen.generateKeyPair();
 	}
 	
 	/**
@@ -66,9 +67,10 @@ public class Crypter {
 			pairgen = KeyPairGenerator.getInstance("RSA");
 		} catch (NoSuchAlgorithmException e) {
 			logger.fatal("RSA密钥创建失败", e);
+			throw new IllegalStateException(e);
 		}
-		SecureRandom random = new SecureRandom();
-		pairgen.initialize(length, random);
+		assert pairgen != null;
+		pairgen.initialize(length, new SecureRandom());
 		KeyPair keyPair = pairgen.generateKeyPair();
 		try (ObjectOutputStream outPublicKey = new ObjectOutputStream(new FileOutputStream(publicKeyFile));
 				ObjectOutputStream outPrivateKey = new ObjectOutputStream(new FileOutputStream(privateKeyFile))) {
@@ -184,7 +186,7 @@ public class Crypter {
 	public String encrypt(String plaintext, PublicKey publicKey) {
 		try (ByteArrayInputStream in = new ByteArrayInputStream(plaintext.getBytes());
 				ByteArrayOutputStream bout = new ByteArrayOutputStream();
-				DataOutputStream out = new DataOutputStream(bout);) {
+				DataOutputStream out = new DataOutputStream(bout)) {
 			KeyGenerator keygen = KeyGenerator.getInstance("AES");
 			SecureRandom random = new SecureRandom();
 			keygen.init(random);
@@ -199,9 +201,8 @@ public class Crypter {
 			cipher = Cipher.getInstance("AES");
 			cipher.init(Cipher.ENCRYPT_MODE, key);
 			crypt(in, out, cipher);
-			
-			String ciphertext = hex.encodeHexStr(bout.toByteArray());
-			return ciphertext;
+
+			return hex.encodeHexStr(bout.toByteArray());
 		} catch (IOException | GeneralSecurityException e) {
 			logger.fatal("加密失败", e);
 			throw new RuntimeException(e);
@@ -218,7 +219,7 @@ public class Crypter {
 		byte[] ciphertextByteArray = hex.decodeHex(ciphertext.toCharArray());
 		try (ByteArrayInputStream bin = new ByteArrayInputStream(ciphertextByteArray);
 				DataInputStream in = new DataInputStream(bin);
-				ByteArrayOutputStream out = new ByteArrayOutputStream();) {
+				ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 			int length = in.readInt();
 			byte[] wrappedKey = new byte[length];
 			in.read(wrappedKey, 0, length);

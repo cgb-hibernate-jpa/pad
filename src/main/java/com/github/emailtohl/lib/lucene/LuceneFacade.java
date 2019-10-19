@@ -225,7 +225,7 @@ public class LuceneFacade implements AutoCloseable {
 		}
 		Number id = field.numericValue();
 		if (id instanceof Long) {
-			return ((Long) id).longValue();
+			return id.longValue();
 		} else {
 			return 0L;
 		}

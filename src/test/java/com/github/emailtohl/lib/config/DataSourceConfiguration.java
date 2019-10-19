@@ -19,8 +19,7 @@ class DataSourceConfiguration {
 	private static final Logger LOG = LogManager.getLogger();
 	/**
 	 * 静态配置方法，该方法将在最早执行，这样才能读取properties配置
-	 * 
-	 * @return
+	 * @return PropertySourcesPlaceholderConfigurer
 	 */
 	@Bean
 	public static PropertySourcesPlaceholderConfigurer placeholderConfigurer() {

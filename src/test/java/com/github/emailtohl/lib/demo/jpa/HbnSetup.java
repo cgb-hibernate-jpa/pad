@@ -19,8 +19,7 @@ public class HbnSetup {
 	public final Properties properties = new Properties();
 	public final EntityManagerFactory entityManagerFactory;
 
-	public HbnSetup(String dataSourceName, DatabaseProduct databaseProduct, String... hbmResources)
-			throws Exception {
+	public HbnSetup(String dataSourceName, DatabaseProduct databaseProduct, String... hbmResources) {
 		ServiceRegistry standardRegistry = new StandardServiceRegistryBuilder()
 //			.applySetting("hibernate.connection.driver_class", "org.h2.Driver")
 //			.applySetting("hibernate.connection.url", "jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1;MVCC=TRUE")

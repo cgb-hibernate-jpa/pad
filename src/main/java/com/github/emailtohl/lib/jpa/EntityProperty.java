@@ -115,7 +115,7 @@ class EntityProperty {
 	
 	/**
 	 * 获取该属性的泛型类
-	 * @return
+	 * @return 泛型类的实例
 	 */
 	Class<?>[] getGenericClass() {
 		if (AccessType.PROPERTY == accessType) {

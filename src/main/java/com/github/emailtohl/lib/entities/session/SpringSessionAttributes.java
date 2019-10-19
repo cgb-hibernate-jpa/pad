@@ -69,7 +69,7 @@ public class SpringSessionAttributes {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (obj != null && obj instanceof Id) {
+			if (obj instanceof Id) {
 				Id that = (Id) obj;
 				return springSession.equals(that.getSpringSession()) && attributeName.equals(that.getAttributeName());
 			}

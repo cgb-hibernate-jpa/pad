@@ -115,7 +115,7 @@ public class OauthApprovals {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (obj != null && obj instanceof Id) {
+			if (obj instanceof Id) {
 				Id that = (Id) obj;
 				return userId.equals(that.getUserId()) && clientId.equals(that.getClientId());
 			}

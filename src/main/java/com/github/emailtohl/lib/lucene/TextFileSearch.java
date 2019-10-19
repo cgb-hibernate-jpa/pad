@@ -88,7 +88,7 @@ public class TextFileSearch implements AutoCloseable {
 	 */
 	private Document getDocument(File file) throws IOException {
 		FileInputStream fis = null;
-		String content = "";
+		String content;
 		try {
 			fis = new FileInputStream(file);
 			content = TextUtil.readFileToString(fis);
@@ -122,8 +122,11 @@ public class TextFileSearch implements AutoCloseable {
 		if (textFileFilter.accept(path)) {
 			docs.add(getDocument(path));
 		} else if (path.isDirectory()) {
-			for (File sub : path.listFiles()) {
-				docs.addAll(getDocuments(sub));
+			File[] files = path.listFiles();
+			if (files instanceof File[]) {
+				for (File sub : path.listFiles()) {
+					docs.addAll(getDocuments(sub));
+				}
 			}
 		}
 		return docs;
@@ -265,7 +268,7 @@ public class TextFileSearch implements AutoCloseable {
 	 * 
 	 * @author HeLei
 	 */
-	class TextFilesFilter implements FileFilter {
+	static class TextFilesFilter implements FileFilter {
 		private static final long MAX_BYTES = 10_485_760L;// 10兆
 		private final Set<String> SUFFIX_SET = new HashSet<String>(Arrays.asList("dll", "jpg", "png", "gif", "tif",
 				"bmp", "dwg", "psd", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "mdb", "wpd", "zip", "gz", "rar",

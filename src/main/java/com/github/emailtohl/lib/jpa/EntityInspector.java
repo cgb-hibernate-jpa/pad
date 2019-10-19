@@ -76,7 +76,7 @@ class EntityInspector {
 	 * 
 	 * @param descriptor JavaBean属性描述器
 	 * @param annotationClass 注解的class
-	 * @return
+	 * @return 指定注解的实例
 	 */
 	static <A extends Annotation> A getAnnotation(PropertyDescriptor descriptor, Class<A> annotationClass) {
 		Method read = descriptor.getReadMethod(), write = descriptor.getWriteMethod();
@@ -194,26 +194,26 @@ class EntityInspector {
 			clz = clz.getSuperclass();
 		}
 		// 寻找上界
-		Embeddable embeddableAnno = null;
-		Entity entityAnno = null;
+		Embeddable embeddableAnn;
+		Entity entityAnn;
 		// 指定为ArrayList，对数组操作
 		for (int i = 0; i < ls.size(); i++) {
 			clz = ls.get(i);
-			embeddableAnno = clz.getAnnotation(Embeddable.class);
-			entityAnno = clz.getAnnotation(Entity.class);
-			if (embeddableAnno != null || entityAnno != null) {
+			embeddableAnn = clz.getAnnotation(Embeddable.class);
+			entityAnn = clz.getAnnotation(Entity.class);
+			if (embeddableAnn != null || entityAnn != null) {
 				entityClass = clz;
 				break;
 			}
 		}
 		// 寻找下届
-		MappedSuperclass mappedSuperclassAnno = null;
+		MappedSuperclass mappedSuperclassAnno;
 		for (int i = ls.size() - 1; i >= 0; i--) {
 			clz = ls.get(i);
 			mappedSuperclassAnno = clz.getAnnotation(MappedSuperclass.class);
-			entityAnno = clz.getAnnotation(Entity.class);
-			embeddableAnno = clz.getAnnotation(Embeddable.class);
-			if (mappedSuperclassAnno != null || entityAnno != null || embeddableAnno != null) {
+			entityAnn = clz.getAnnotation(Entity.class);
+			embeddableAnn = clz.getAnnotation(Embeddable.class);
+			if (mappedSuperclassAnno != null || entityAnn != null || embeddableAnn != null) {
 				stopClass = clz.getSuperclass();
 				break;
 			}
@@ -322,7 +322,7 @@ class EntityInspector {
 	 * @return 作为映射关系部分的属性
 	 */
 	static <T> Set<EntityProperty> getEntityProperty(Class<T> clazz) {
-		Set<EntityProperty> properties = new HashSet<EntityProperty>();
+		Set<EntityProperty> properties;
 		Class<?>[] bound = findEntityBound(clazz);
 		Class<?> entityClass = bound[0];
 		if (AccessType.FIELD == getAccessType(entityClass)) {

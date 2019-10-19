@@ -19,8 +19,7 @@ public class JPASetup {
 	public final Map<String, String> properties = new HashMap<>();
 	public final EntityManagerFactory entityManagerFactory;
 
-	public JPASetup(DatabaseProduct databaseProduct, String persistenceUnitName, String... hbmResources)
-			throws Exception {
+	public JPASetup(DatabaseProduct databaseProduct, String persistenceUnitName, String... hbmResources) {
 
 		this.persistenceUnitName = persistenceUnitName;
 

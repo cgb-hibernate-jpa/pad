@@ -27,7 +27,7 @@ public class AutowireBean {
 			Abean abean = null;
 			try {
 				abean = ctx.getBean(Abean.class);
-			} catch (NoSuchBeanDefinitionException e) {
+			} catch (NoSuchBeanDefinitionException ignored) {
 			}
 			assert abean == null;
 

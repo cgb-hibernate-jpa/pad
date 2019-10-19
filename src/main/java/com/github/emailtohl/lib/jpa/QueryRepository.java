@@ -128,7 +128,7 @@ public abstract class QueryRepository<E, ID extends Serializable> extends Entity
 		// hack内部类不能修改外部域的编译问题
 		boolean[] first = { true };
 
-		/** 使用内部类避免中间状态变量受多线程影响 */
+		// 使用内部类避免中间状态变量受多线程影响
 		class Closure {
 			private static final String IS_NULL = "IS NULL";
 			private static final String IS_NOT_NULL = "IS NOT NULL";

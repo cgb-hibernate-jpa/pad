@@ -56,18 +56,18 @@ public class LuceneFacadeTest {
 						try {
 							id = ids.get(random.nextInt(ids.size()));
 							facade.update(id, createDocument());
-						} catch (IndexOutOfBoundsException e) {}
+						} catch (IndexOutOfBoundsException ignored) {}
 						break;
 					case 2:
 						try {
 							id = ids.get(random.nextInt(ids.size()));
 							facade.delete(id);
-						} catch (IndexOutOfBoundsException e) {}
+						} catch (IndexOutOfBoundsException ignored) {}
 						break;
 					default:
 						break;
 					}
-				} catch (IOException | IllegalArgumentException e) {
+				} catch (IOException | IllegalArgumentException ignored) {
 				} finally {
 					countDownLatch.countDown();
 				}

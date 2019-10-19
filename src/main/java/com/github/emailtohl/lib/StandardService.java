@@ -150,7 +150,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 	public void validate(E entity) {
 		Set<ConstraintViolation<E>> violations = VALIDATOR.validate(entity);
 		if (violations.size() > 0) {
-			violations.forEach(v -> LOG.debug(v));
+			violations.forEach(LOG::debug);
 			throw new NotAcceptableException(new ConstraintViolationException(violations));
 		}
 	}
@@ -195,7 +195,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 			Set<Object> used = new HashSet<>();
 			Object exec(Object o) {
 				if (o == null) {
-					return o;
+					return null;
 				}
 				if (used.contains(o)) {
 					return o;
@@ -212,19 +212,14 @@ public abstract class StandardService<E, ID extends Serializable> {
 					Collection<Object> c = (Collection<Object>) o;
 					List<Object> temp = c.stream().map(this::exec).collect(Collectors.toList());
 					c.clear();
-					temp.forEach(i -> {
-						c.add(i);
-					});
+					c.addAll(temp);
 					return o;
 				}
 				if (o instanceof Map) {
 					@SuppressWarnings("unchecked")
 					Map<Object, Object> m = (Map<Object, Object>) o;
-					m = m.entrySet().stream().map(e -> {
-						e.setValue(exec(e.getValue()));
-						return e;
-					}).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-					return o;
+					m = m.entrySet().stream().peek(e -> e.setValue(exec(e.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					return m;
 				}
 				try {
 					for (PropertyDescriptor pd : Introspector.getBeanInfo(o.getClass(), Object.class)
@@ -234,7 +229,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 							continue;
 						}
 						getter.setAccessible(true);
-						Object value = getter.invoke(o, new Object[] {});
+						Object value = getter.invoke(o);
 						if (value == null) {
 							continue;
 						}
@@ -264,7 +259,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 			Set<Object> used = new HashSet<>();
 			Object exec(Object o) {
 				if (o == null) {
-					return o;
+					return null;
 				}
 				if (used.contains(o)) {
 					return o;
@@ -281,19 +276,14 @@ public abstract class StandardService<E, ID extends Serializable> {
 					Collection<Object> c = (Collection<Object>) o;
 					List<Object> temp = c.stream().map(this::exec).collect(Collectors.toList());
 					c.clear();
-					temp.forEach(i -> {
-						c.add(i);
-					});
+					c.addAll(temp);
 					return o;
 				}
 				if (o instanceof Map) {
 					@SuppressWarnings("unchecked")
 					Map<Object, Object> m = (Map<Object, Object>) o;
-					m = m.entrySet().stream().map(e -> {
-						e.setValue(exec(e.getValue()));
-						return e;
-					}).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-					return o;
+					m = m.entrySet().stream().peek(e -> e.setValue(exec(e.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					return m;
 				}
 				try {
 					for (PropertyDescriptor pd : Introspector.getBeanInfo(o.getClass(), Object.class)
@@ -303,7 +293,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 							continue;
 						}
 						getter.setAccessible(true);
-						Object value = getter.invoke(o, new Object[] {});
+						Object value = getter.invoke(o);
 						if (value == null) {
 							continue;
 						}
@@ -328,7 +318,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T extends Serializable> T clone(T o) {
-		ObjectInputStream in = null;
+		ObjectInputStream in;
 		ObjectOutputStream out = null;
 		try {
 			ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -351,7 +341,6 @@ public abstract class StandardService<E, ID extends Serializable> {
 			if (out != null) {
 				try {
 					out.close();
-					out = null;
 				} catch (IOException e) {
 					LOG.catching(e);
 				}
@@ -366,11 +355,7 @@ public abstract class StandardService<E, ID extends Serializable> {
 	 * @return 值对象返回true，否则返回false
 	 */
 	public boolean isValueTypeInstance(Object o) {
-		return o instanceof String || o instanceof Number || o instanceof Enum || o instanceof Character
-				|| o instanceof Boolean || o instanceof Date || o instanceof Calendar || o instanceof Timestamp
-				// Temporal包含Instant,LocalDateTime,LocalDate,LocalTime,OffsetDateTime,OffsetTime,ZonedDateTime
-				|| o instanceof Temporal || o instanceof TimeZone || o instanceof TemporalAmount || o instanceof URL
-				|| o instanceof Blob || o instanceof Clob || o instanceof NClob || o instanceof byte[]
-				|| o instanceof Byte[] || o instanceof char[] || o instanceof Character[] || o instanceof UUID;
+		// Temporal包含Instant,LocalDateTime,LocalDate,LocalTime,OffsetDateTime,OffsetTime,ZonedDateTime
+		return o instanceof String || o instanceof Number || o instanceof Enum || o instanceof Character || o instanceof Boolean || o instanceof Date || o instanceof Calendar || o instanceof Temporal || o instanceof TimeZone || o instanceof TemporalAmount || o instanceof URL || o instanceof Blob || o instanceof Clob || o instanceof NClob || o instanceof byte[] || o instanceof Byte[] || o instanceof char[] || o instanceof Character[] || o instanceof UUID;
 	}
 }

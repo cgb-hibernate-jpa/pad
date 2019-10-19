@@ -140,7 +140,7 @@ class Condition {
 	
 	/**
 	 * 类上的属性名（可能不是实体的属性名）
-	 * @return
+	 * @return 属性名
 	 */
 	String fromName() {
 		if (AccessType.PROPERTY == accessType) {
