@@ -464,7 +464,39 @@ public void doFilter(ServletRequest request, ServletResponse response, FilterCha
 }
 ```
 
-## 4 Lucene搜索
+## 4 web过滤器
+filter包中提供两个常用的web过滤器，其中CompressionFilter可以直接值web容器中声明使用，它提供了gzip的压缩功能，可以提高网络利用率。
+
+另外一个CacheResponseWrapper可以包装HttpServletResponse，常用的场景是收集响应的数据：
+```java
+public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    throws IOException, ServletException {
+  CacheResponseWrapper resp = new CacheResponseWrapper((HttpServletResponse) response);
+  chain.doFilter(request, resp);
+  String charset = resp.getCharacterEncoding();
+  String respStr = new String(resp.getContent(), charset);
+  System.out.println("响应的数据是：", respStr);
+}
+```
+## 5 常用工具
+util包中提供常用工具
+1. FilePathUtil可将文件分隔符统一成当前操作系统一致。
+2. HttpsUnsafeUtil底层使用okhttp，能在不要求安全的测试环境中当作https的客户端使用。
+3. LocalDateUtil提供常用日期的转化功能。
+4. PackageScanner能扫描文件系统和jar包中的类实例。
+5. SnowFlake可提供全局唯一id供数据库使用。
+6. TextUtil可猜测文件的编码格式并读取文件内容。
+
+## 6 xml包
+包含两个mock类。
+
+### 6.1 Elem
+Elem可解析xml文档，其提供的hashCode和equals方法可在容器中识别，使用场景是mock xml格式的api接口。如某api的输入是a.xml,响应b.xml，则可使用Map<Elem, String>来替换它，其中key是Elem实例的a.xml，value是b.xml。
+
+### 6.2 Kvdb
+此类可模拟redis的基本接口，使用方法是先将redis中的输入输出存储到xml格式的文档中，替换redis接口时，改用本地数据提mock支持。
+
+## 7 Lucene搜索
 
 Lucene索引在变更后indexRreader不会读取最新变化，若关闭后重建则需保证indexRreader上没有正在执行的线程。
 所以com.github.emailtohl.lib.lucene.LuceneFacade在整合indexRreader和indexWriter时做了简单的封装，确保在没有搜索线程执行时关闭并重建indexRreader。

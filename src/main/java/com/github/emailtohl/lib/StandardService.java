@@ -15,7 +15,6 @@ import java.net.URL;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.NClob;
-import java.sql.Timestamp;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Calendar;

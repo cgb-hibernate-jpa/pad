@@ -33,16 +33,16 @@ public class KvdbTest {
 	public void testString() {
 		String key = "\"foo\"";
 		String value = "bar";
-		db.saveString(key, value);
-		String res = db.readString(key);
+		db.set(key, value);
+		String res = db.get(key);
 		assertEquals(value, res);
-		db.delString(key);
-		res = db.readString(key);
+		db.del(key);
+		res = db.get(key);
 		assertFalse(StringUtils.hasText(res));
 		
 		value = null;
-		db.saveString(key, value);
-		res = db.readString(key);
+		db.set(key, value);
+		res = db.get(key);
 		assertNull(res);
 	}
 
@@ -51,24 +51,24 @@ public class KvdbTest {
 		String key = "bar";
 		String hkey = "baz";
 		String value = "foo\\";
-		db.saveHash(key, hkey, value);
-		String res = db.readHash(key, hkey);
+		db.hset(key, hkey, value);
+		String res = db.hget(key, hkey);
 		assertEquals(value, res);
-		db.delHash(key, hkey);
-		res = db.readHash(key, hkey);
+		db.hdel(key, hkey);
+		res = db.hget(key, hkey);
 		assertNull(value, res);
 
 		Map<String, String> mk = new HashMap<String, String>();
 		mk.put(hkey, value);
-		db.saveHashAll(key, mk);
-		res = db.readHash(key, hkey);
+		db.hsetall(key, mk);
+		res = db.hget(key, hkey);
 		assertEquals(value, res);
-		assertNotNull(db.readHashAll(key));
+		assertNotNull(db.hgetall(key));
 		
 		
 		value = null;
-		db.saveHash(key, hkey, value);
-		res = db.readHash(key, hkey);
+		db.hset(key, hkey, value);
+		res = db.hget(key, hkey);
 		assertNull(res);
 	}
 
@@ -76,16 +76,16 @@ public class KvdbTest {
 	public void testSet() {
 		String key = "baz";
 		String value = "fux";
-		db.saveSet(key, value);
-		assertTrue(db.readSet(key).contains(value));
+		db.sadd(key, value);
+		assertTrue(db.sgetall(key).contains(value));
 	}
 
 	@Test
 	public void testList() {
 		String key = "fux";
 		String value = "baz";
-		db.rightPushList(key, value);
-		assertTrue(db.readList(key).contains(value));
+		db.rpush(key, value);
+		assertTrue(db.lrangeall(key).contains(value));
 	}
 
 }

@@ -36,6 +36,7 @@ import com.github.emailtohl.lib.exception.InvalidDataException;
 
 /**
  * key value本地存储库，使用场景主要是用于收集redis的数据以便于mock掉redis接口
+ * 本类模拟了redis的主要数据结构，但是提供的接口有限，可根据需要进行扩展
  * 
  * @author HeLei
  */
@@ -84,24 +85,27 @@ public class Kvdb implements Serializable {
 	/**
 	 * xml配置文件工厂
 	 */
-	private static DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	private static final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	/**
+	 * 数据保存的路径
+	 */
 	private transient String path;
 	/**
 	 * redis的字符串类型
 	 */
-	private ConcurrentHashMap<String, String> string = new ConcurrentHashMap<String, String>();
+	protected final ConcurrentHashMap<String, String> string = new ConcurrentHashMap<String, String>();
 	/**
 	 * redis的散列类型
 	 */
-	private ConcurrentHashMap<String, ConcurrentHashMap<String, String>> hash = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
+	protected final ConcurrentHashMap<String, ConcurrentHashMap<String, String>> hash = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
 	/**
 	 * redis的列表类型
 	 */
-	private ConcurrentHashMap<String, CopyOnWriteArrayList<String>> array = new ConcurrentHashMap<String, CopyOnWriteArrayList<String>>();
+	protected final ConcurrentHashMap<String, CopyOnWriteArrayList<String>> array = new ConcurrentHashMap<String, CopyOnWriteArrayList<String>>();
 	/**
 	 * redis的集合类型
 	 */
-	private ConcurrentHashMap<String, CopyOnWriteArraySet<String>> set = new ConcurrentHashMap<String, CopyOnWriteArraySet<String>>();
+	protected final ConcurrentHashMap<String, CopyOnWriteArraySet<String>> set = new ConcurrentHashMap<String, CopyOnWriteArraySet<String>>();
 
 	/**
 	 * 构造KVLocalStore实例，序列化的内容将保存在参数指定的文件中
@@ -124,7 +128,7 @@ public class Kvdb implements Serializable {
 	 * @param key   键
 	 * @param value 字符串值
 	 */
-	public void saveString(String key, String value) {
+	public void set(String key, String value) {
 		string.put(key, value == null ? NULL : value);
 		saveToFile();
 	}
@@ -135,7 +139,7 @@ public class Kvdb implements Serializable {
 	 * @param key 键
 	 * @return 字符串值
 	 */
-	public String readString(String key) {
+	public String get(String key) {
 		String value = string.get(key);
 		return NULL.equals(value) ? null : value;
 	}
@@ -145,7 +149,7 @@ public class Kvdb implements Serializable {
 	 * 
 	 * @param key 键
 	 */
-	public void delString(String key) {
+	public void del(String key) {
 		string.remove(key);
 		saveToFile();
 	}
@@ -157,7 +161,7 @@ public class Kvdb implements Serializable {
 	 * @param hashKey 散列键
 	 * @param value   字符串值
 	 */
-	public void saveHash(String key, String hashKey, String value) {
+	public void hset(String key, String hashKey, String value) {
 		ConcurrentHashMap<String, String> hashValue = hash.get(key);
 		if (hashValue == null) {
 			hashValue = new ConcurrentHashMap<String, String>();
@@ -175,7 +179,7 @@ public class Kvdb implements Serializable {
 	 * @param hashKey 散列键
 	 * @return 字符串值
 	 */
-	public String readHash(String key, String hashKey) {
+	public String hget(String key, String hashKey) {
 		ConcurrentHashMap<String, String> hashValue = hash.get(key);
 		if (hashValue == null) {
 			return null;
@@ -190,7 +194,7 @@ public class Kvdb implements Serializable {
 	 * @param key     键
 	 * @param hashKey 散列键
 	 */
-	public void delHash(String key, String hashKey) {
+	public void hdel(String key, String hashKey) {
 		ConcurrentHashMap<String, String> hashValue = hash.get(key);
 		if (hashValue != null) {
 			// the previous value associated with key, or null if there was no mapping for key
@@ -207,7 +211,7 @@ public class Kvdb implements Serializable {
 	 * @param key  键
 	 * @param hash 散列值
 	 */
-	public void saveHashAll(String key, Map<String, String> hash) {
+	public void hsetall(String key, Map<String, String> hash) {
 		ConcurrentHashMap<String, String> hashValue = new ConcurrentHashMap<String, String>(hash);
 		this.hash.put(key, hashValue);
 		saveToFile();
@@ -219,7 +223,7 @@ public class Kvdb implements Serializable {
 	 * @param key 键
 	 * @return 整个键对应的散列值
 	 */
-	public Map<String, String> readHashAll(String key) {
+	public Map<String, String> hgetall(String key) {
 		Map<String, String> value = hash.get(key);
 		return value == null ? new HashMap<String, String>() : value;
 	}
@@ -230,7 +234,7 @@ public class Kvdb implements Serializable {
 	 * @param key   键
 	 * @param value 字符串值
 	 */
-	public void saveSet(String key, String value) {
+	public void sadd(String key, String value) {
 		CopyOnWriteArraySet<String> setValue = set.get(key);
 		if (setValue == null) {
 			setValue = new CopyOnWriteArraySet<String>();
@@ -247,7 +251,7 @@ public class Kvdb implements Serializable {
 	 * @param key   键
 	 * @param value 集合值
 	 */
-	public void saveSetAll(String key, Set<String> value) {
+	public void saddall(String key, Set<String> value) {
 		CopyOnWriteArraySet<String> setValue = new CopyOnWriteArraySet<String>(value);
 		this.set.put(key, setValue);
 		saveToFile();
@@ -259,7 +263,7 @@ public class Kvdb implements Serializable {
 	 * @param key 键
 	 * @return 键对应的整个集合
 	 */
-	public Set<String> readSet(String key) {
+	public Set<String> sgetall(String key) {
 		Set<String> value = set.get(key);
 		return value == null ? new HashSet<String>() : value;
 	}
@@ -270,7 +274,7 @@ public class Kvdb implements Serializable {
 	 * @param key   键
 	 * @param value 字符串值
 	 */
-	public void rightPushList(String key, String value) {
+	public void rpush(String key, String value) {
 		CopyOnWriteArrayList<String> arrayValue = array.get(key);
 		if (arrayValue == null) {
 			arrayValue = new CopyOnWriteArrayList<String>();
@@ -287,7 +291,7 @@ public class Kvdb implements Serializable {
 	 * @param key 键
 	 * @return 键对应的整个列表
 	 */
-	public List<String> readList(String key) {
+	public List<String> lrangeall(String key) {
 		List<String> value = array.get(key);
 		return value == null ? new ArrayList<String>() : value;
 	}
@@ -368,7 +372,7 @@ public class Kvdb implements Serializable {
 	/**
 	 * 将本类实例的数据写入本地文件中
 	 */
-	private void saveToFile() {
+	public void saveToFile() {
 		Document document = buildDoc();
 		synchronized (Kvdb.class) {
 			try {
