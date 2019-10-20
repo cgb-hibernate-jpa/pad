@@ -511,6 +511,6 @@ com.github.emailtohl.lib.lucene.FileSearch则是LuceneFacade的应用，它具�
 
 > 被搜索的目录下若有新的文件添加、修改或删除时，需更新索引，相应的方法是：addIndex(File file)、updateIndex(File file)、deleteIndex(File file)。
 
-## 5 最后
+## 8 最后
 
 本lib库是我自己经验的总结，它提取了日常开发中最常用的功能，可做业务代码的基础库使用。这里面还有一个我自己实现的RSA加密算法，虽然是按照算法原理进行开发的，但是并未经过行业验证，所以这里就不做推荐了。
