@@ -20,32 +20,22 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.github.emailtohl.lib.exception.InnerDataStateException;
 
 /**
- * 自定义的xml元素数据模型，但满足自定义的equals hashcode，可在容器中识别
- * 使用场景，mock 以xml作为输入输出的接口：
- * 首先将预先收集的输入xml和输出xml收集起来；
- * 然后将输入的xml构造成本类的实例；
- * 最后将该实例和输出xml存储在Map&lt;Elem, String&gt;中，这样就能mock掉真实的接口
+ * 自定义的xml元素数据模型，但满足自定义的equals hashcode，可在容器中识别 使用场景，mock 以xml作为输入输出的接口：
+ * 首先将预先收集的输入xml和输出xml收集起来； 然后将输入的xml构造成本类的实例； 最后将该实例和输出xml存储在Map&lt;Elem,
+ * String&gt;中，这样就能mock掉真实的接口
  * 
  * @author helei
  *
  */
 public class Elem {
 	private static final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-	private static final ObjectWriter writer = new ObjectMapper().writerWithDefaultPrettyPrinter();
 	/**
 	 * 节点名字
 	 */
 	public final String name;
-	/**
-	 * 子节点
-	 */
-	public final List<Elem> children = new ArrayList<Elem>();
 	/**
 	 * 该元素上的属性
 	 */
@@ -54,6 +44,10 @@ public class Elem {
 	 * 元素的文本集合
 	 */
 	public final List<String> texts = new ArrayList<String>();
+	/**
+	 * 子节点
+	 */
+	public final List<Elem> children = new ArrayList<Elem>();
 
 	/**
 	 * 从Element中转成本类实例
@@ -62,7 +56,7 @@ public class Elem {
 	 */
 	public Elem(Element element) {
 		this.name = element.getNodeName();
-		fillRoot(element);
+		fillThis(element);
 	}
 
 	/**
@@ -72,27 +66,9 @@ public class Elem {
 	 * @throws SAXException If any parse errors occur
 	 */
 	public Elem(String xmlContent) throws SAXException {
-		Element element = getElement(xmlContent);
+		Element element = getElement(xmlContent).getDocumentElement();
 		this.name = element.getNodeName();
-		fillRoot(element);
-	}
-
-	/**
-	 * 解析xml文本获取元素，屏蔽不可能发生的异常
-	 * 
-	 * @param xmlContent xml文本
-	 * @return 解析的xml元素实例
-	 * @throws SAXException If any parse errors occur
-	 */
-	private Element getElement(String xmlContent) throws SAXException {
-		try {
-			DocumentBuilder builder = factory.newDocumentBuilder();
-			InputStream inputStream = new ByteArrayInputStream(xmlContent.getBytes());
-			Document document = builder.parse(inputStream);
-			return document.getDocumentElement();
-		} catch (ParserConfigurationException | IOException e) {
-			throw new InnerDataStateException(e);
-		}
+		fillThis(element);
 	}
 
 	/**
@@ -100,7 +76,7 @@ public class Elem {
 	 * 
 	 * @param element org.w3c.dom.Element
 	 */
-	private void fillRoot(Element element) {
+	private void fillThis(Element element) {
 		NamedNodeMap attributes = element.getAttributes();
 		for (int i = 0; i < attributes.getLength(); i++) {
 			Node n = attributes.item(i);
@@ -141,25 +117,24 @@ public class Elem {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (attrs.size() == 0 ? 0 : attrs.hashCode());
-		result = prime * result + (children.size() == 0 ? 0 : childreHashCode());
+		result = prime * result + (children.size() == 0 ? 0 : childrenHashCode());
 		result = prime * result + (StringUtils.hasText(name) ? 0 : name.hashCode());
 		result = prime * result + (texts.size() == 0 ? 0 : textHashCode());
 		return result;
 	}
 
-	private int childreHashCode() {
+	private int childrenHashCode() {
 		int result = 1;
 		for (Elem e : children) {
 			result = result + e.hashCode();
 		}
 		return result;
 	}
-	
+
 	private int textHashCode() {
-		final int prime = 31;
 		int result = 1;
 		for (String s : texts) {
-			result = prime * result + s.hashCode();
+			result = result + s.hashCode();
 		}
 		return result;
 	}
@@ -189,11 +164,23 @@ public class Elem {
 
 	@Override
 	public String toString() {
-		try {
-			return writer.writeValueAsString(this);
-		} catch (JsonProcessingException e) {
-			return null;
-		}
+		return "Elem [name=" + name + ", attrs=" + attrs + ", texts=" + texts + ", children=" + children + "]";
 	}
 
+	/**
+	 * 解析xml文本获取元素，屏蔽不可能发生的异常
+	 * 
+	 * @param xmlContent xml文本
+	 * @return 解析的xml元素实例
+	 * @throws SAXException If any parse errors occur
+	 */
+	private Document getElement(String xmlContent) throws SAXException {
+		try {
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			InputStream inputStream = new ByteArrayInputStream(xmlContent.getBytes());
+			return builder.parse(inputStream);
+		} catch (ParserConfigurationException | IOException e) {
+			throw new InnerDataStateException(e);
+		}
+	}
 }
