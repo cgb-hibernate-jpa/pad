@@ -4,7 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -56,7 +58,7 @@ public class Elem {
 	 */
 	public Elem(Element element) {
 		this.name = element.getNodeName();
-		fillThis(element);
+		fillSelf(element);
 	}
 
 	/**
@@ -68,7 +70,7 @@ public class Elem {
 	public Elem(String xmlContent) throws SAXException {
 		Element element = getElement(xmlContent).getDocumentElement();
 		this.name = element.getNodeName();
-		fillThis(element);
+		fillSelf(element);
 	}
 
 	/**
@@ -76,7 +78,7 @@ public class Elem {
 	 * 
 	 * @param element org.w3c.dom.Element
 	 */
-	private void fillThis(Element element) {
+	private void fillSelf(Element element) {
 		NamedNodeMap attributes = element.getAttributes();
 		for (int i = 0; i < attributes.getLength(); i++) {
 			Node n = attributes.item(i);
@@ -164,7 +166,54 @@ public class Elem {
 
 	@Override
 	public String toString() {
-		return "Elem [name=" + name + ", attrs=" + attrs + ", texts=" + texts + ", children=" + children + "]";
+		StringBuilder s = new StringBuilder();
+		s.append('\n').append('<').append(name).append(attrString()).append('>');
+		// 将文本和元素的顺序交替写入数组中，以便于更符合实际xml的顺序
+		Object[] arr = alternateTextsAndElements();
+		for (Object o : arr) {
+			s.append(o.toString());
+		}
+		s.append('\n').append('<').append('/').append(name).append('>');
+		return s.toString();
+	}
+
+	/**
+	 * 将元素属性值创建成一段字符串
+	 * 
+	 * @return 属性的字符串
+	 */
+	private String attrString() {
+		if (attrs.isEmpty()) {
+			return "";
+		}
+		StringBuilder s = new StringBuilder();
+		for (Entry<String, String> e : attrs.entrySet()) {
+			s.append(' ').append(e.getKey()).append('=').append('"').append(e.getValue()).append('"');
+		}
+		return s.toString();
+	}
+
+	/**
+	 * 将文本和元素的顺序交替写入数组中，以便于更符合实际xml的顺序
+	 * 
+	 * @return 文本和元素交替顺序的数组
+	 */
+	private Object[] alternateTextsAndElements() {
+		Object[] arr = new Object[texts.size() + children.size()];
+		Iterator<String> itext = texts.iterator();
+		Iterator<Elem> ichildren = children.iterator();
+		int i = 0;
+		while (itext.hasNext() && ichildren.hasNext()) {
+			arr[i++] = itext.next();
+			arr[i++] = ichildren.next();
+		}
+		while (itext.hasNext()) {
+			arr[i++] = itext.next();
+		}
+		while (ichildren.hasNext()) {
+			arr[i++] = ichildren.next();
+		}
+		return arr;
 	}
 
 	/**
