@@ -15,9 +15,9 @@
 <dependency>
   <groupId>com.github.emailtohl</groupId>
   <artifactId>pad</artifactId>
-  <version>2.1.1-RELEASE</version>
+  <version>2.2.0-RELEASE</version>
   <scope>system</scope>
-  <systemPath>${project.basedir}/pad/pad-2.1.1-RELEASE.jar</systemPath>
+  <systemPath>${project.basedir}/pad/pad-2.2.0-RELEASE.jar</systemPath>
 </dependency>
 ```
 

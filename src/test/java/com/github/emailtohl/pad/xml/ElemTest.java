@@ -31,7 +31,7 @@ public class ElemTest {
 				"\r\n" + 
 				"	<groupId>com.github.emailtohl</groupId>\r\n" + 
 				"	<artifactId>pad</artifactId>\r\n" + 
-				"	<version>2.1.1-RELEASE</version>\r\n" + 
+				"	<version>2.2.0-RELEASE</version>\r\n" + 
 				"	<packaging>jar</packaging>\r\n" + 
 				"\r\n" + 
 				"	<name>pad</name>\r\n" + 
@@ -42,7 +42,7 @@ public class ElemTest {
 				"		2.0.5-RELEASE:util\r\n" + 
 				"		2.1.0-RELEASE:filter,xml\r\n" + 
 				"		<em>current</em>\r\n" + 
-				"		2.1.1-RELEASE:code improve\r\n" + 
+				"		2.2.0-RELEASE:code improve\r\n" + 
 				"	</description>\r\n" + 
 				"	\r\n" + 
 				"</project>";
@@ -51,7 +51,7 @@ public class ElemTest {
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + 
 				"	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" + 
 				"	<modelVersion>4.0.0</modelVersion>\r\n" + 
-				"	<groupId>com.github.emailtohl</groupId><artifactId>pad</artifactId><version>2.1.1-RELEASE</version><packaging>jar</packaging>\r\n" + 
+				"	<groupId>com.github.emailtohl</groupId><artifactId>pad</artifactId><version>2.2.0-RELEASE</version><packaging>jar</packaging>\r\n" + 
 				"	<name>pad</name>\r\n" + 
 				"	<description>\r\n" + 
 				"		The basic development kit, which encapsulates common features in projects such as JPA, file search, encryption and decryption, makes development easier.\r\n" + 
@@ -60,7 +60,7 @@ public class ElemTest {
 				"		2.0.5-RELEASE:util\r\n" + 
 				"		2.1.0-RELEASE:filter,xml\r\n" + 
 				"		<em>current</em>\r\n" + 
-				"		2.1.1-RELEASE:code improve\r\n" + 
+				"		2.2.0-RELEASE:code improve\r\n" + 
 				"	</description>\r\n" + 
 				"</project>";
 		
