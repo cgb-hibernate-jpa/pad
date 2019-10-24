@@ -14,10 +14,10 @@
 ```xml
 <dependency>
   <groupId>com.github.emailtohl</groupId>
-  <artifactId>lib</artifactId>
+  <artifactId>pad</artifactId>
   <version>2.1.1-RELEASE</version>
   <scope>system</scope>
-  <systemPath>${project.basedir}/lib/lib-2.1.1-RELEASE.jar</systemPath>
+  <systemPath>${project.basedir}/pad/pad-2.1.1-RELEASE.jar</systemPath>
 </dependency>
 ```
 
@@ -26,7 +26,7 @@
 若在容器里编译，可参考：
 
 ```sh
-docker run --rm -v $PWD:/mylib -v /var/repository:/root/.m2/repository -w /mylib maven mvn clean install
+docker run --rm -v $PWD:/pad -v /var/repository:/root/.m2/repository -w /pad maven mvn clean install
 ```
 若maven-javadoc-plugin插件不能正常工作导致打包失败，可加上参数-Dmaven.javadoc.skip=true忽略
 
@@ -36,10 +36,10 @@ docker run --rm -v $PWD:/mylib -v /var/repository:/root/.m2/repository -w /mylib
 
 ### 2.1 编写实体类
 
-业务代码中的实体类可以继承com.github.emailtohl.lib.jpa.EntityBase，他们具有统一的效果：
+业务代码中的实体类可以继承com.github.emailtohl.pad.jpa.EntityBase，他们具有统一的效果：
 
 1. 获得全局唯一性的id，并以id为主键的equals&hashcode方法，用于鉴别实体的相等性
-2. 监听JPA事件，com.github.emailtohl.lib.jpa.EntityListener会在Spring上下文中发布增删改事件,只要Bean实现ApplicationListener&lt;EntityBase&gt;即可收到事件
+2. 监听JPA事件，com.github.emailtohl.pad.jpa.EntityListener会在Spring上下文中发布增删改事件,只要Bean实现ApplicationListener&lt;EntityBase&gt;即可收到事件
 3. 实体具有版本管理功能，在乐观锁模式下，可让并发修改更为安全
 4. 覆盖toString方法，序列化为json
 
@@ -143,7 +143,7 @@ SELECT u FROM User u WHERE 'foo@localhost' MEMBER OF u.loginNames AND '199223888
 
 ##### 2.3.2.1 关于基本类型
 
-从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.lib.jpa.ZeroCondition注解，如：
+从上面介绍的使用来看，实体类最好不要使用基本类型，因为基本类型有初始值，不能表达null，QueryRepository将忽略基本类型的初始值作为查询条件，如int类型会忽略0，double类型会忽略0.0，boolean类型会忽略false……，若确实需要将该基本类型的初始值作为查询条件，需在该属性上添加com.github.emailtohl.pad.jpa.ZeroCondition注解，如：
 
 ```java
 @ZeroCondition
@@ -168,7 +168,7 @@ public String getName() {
 LOWER(name) LIKE 'foo'
 ```
 
-若需模糊查询，则应该由业务代码自行在值上添加通配符：'FOO%'。若一定要对字符串用相等做比较，可以在其属性上添加上com.github.emailtohl.lib.jpa.Instruction注解进行特殊说明，如：
+若需模糊查询，则应该由业务代码自行在值上添加通配符：'FOO%'。若一定要对字符串用相等做比较，可以在其属性上添加上com.github.emailtohl.pad.jpa.Instruction注解进行特殊说明，如：
 
 ```java
 @Instruction(operator = Operator.EQ)
@@ -185,7 +185,7 @@ name='foo'
 
 ##### 2.3.2.3 其他条件比较
 
-有的查询需要其他条件比较，如大于、小于、不为NULL等等，对于这些需求，就得在对应的属性上使用com.github.emailtohl.lib.jpa.Instruction注解，如：
+有的查询需要其他条件比较，如大于、小于、不为NULL等等，对于这些需求，就得在对应的属性上使用com.github.emailtohl.pad.jpa.Instruction注解，如：
 
 ```java
 @Instruction(operator = Operator.GTE)
@@ -316,7 +316,7 @@ List<E> search(String query);
 
 即可进行全文搜索。其中Pageable是Spring data JPA提供的查询类，可在控制层注入，前面已经有介绍。
 
-> 需要注意的是，SearchRepository只提供字符串搜索功能，不支持数字、日期的大于、小于条件查询，对于Date、Number、Enumeration，在标注上@Field注解后，需要再添加上com.github.emailtohl.lib.jpa.StringBridgeCustomization注解，让该属性值作为字符串被索引查询。
+> 需要注意的是，SearchRepository只提供字符串搜索功能，不支持数字、日期的大于、小于条件查询，对于Date、Number、Enumeration，在标注上@Field注解后，需要再添加上com.github.emailtohl.pad.jpa.StringBridgeCustomization注解，让该属性值作为字符串被索引查询。
 
 ### 2.5 AuditedRepository
 
@@ -499,9 +499,9 @@ Elem可解析xml文档，其提供的hashCode和equals方法可在容器中识�
 ## 7 Lucene搜索
 
 Lucene索引在变更后indexRreader不会读取最新变化，若关闭后重建则需保证indexRreader上没有正在执行的线程。
-所以com.github.emailtohl.lib.lucene.LuceneFacade在整合indexRreader和indexWriter时做了简单的封装，确保在没有搜索线程执行时关闭并重建indexRreader。
+所以com.github.emailtohl.pad.lucene.LuceneFacade在整合indexRreader和indexWriter时做了简单的封装，确保在没有搜索线程执行时关闭并重建indexRreader。
 
-com.github.emailtohl.lib.lucene.FileSearch则是LuceneFacade的应用，它具备文件内容的搜索功能，它使用org.mozilla.intl.chardet.nsDetector自动识别文件的编码格式，再利用Lucene对文件的内容进行搜索。
+com.github.emailtohl.pad.lucene.FileSearch则是LuceneFacade的应用，它具备文件内容的搜索功能，它使用org.mozilla.intl.chardet.nsDetector自动识别文件的编码格式，再利用Lucene对文件的内容进行搜索。
 
 首先，在构造时，需要传入Lucene的Directory作为索引的存储仓库，可以是基于内存的RAMDirectory，也可以是基于文件系统的FSDirectory。
 
@@ -513,4 +513,4 @@ com.github.emailtohl.lib.lucene.FileSearch则是LuceneFacade的应用，它具�
 
 ## 8 最后
 
-本lib库是我自己经验的总结，它提取了日常开发中最常用的功能，可做业务代码的基础库使用。这里面还有一个我自己实现的RSA加密算法，虽然是按照算法原理进行开发的，但是并未经过行业验证，所以这里就不做推荐了。
+本项目是我自己经验的总结，它提取了日常开发中最常用的功能，可做业务代码的基础库使用。这里面还有一个我自己实现的RSA加密算法，虽然是按照算法原理进行开发的，但是并未经过行业验证，所以这里就不做推荐了。

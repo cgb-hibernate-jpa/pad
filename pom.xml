@@ -5,11 +5,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.github.emailtohl</groupId>
-	<artifactId>lib</artifactId>
+	<artifactId>pad</artifactId>
 	<version>2.1.1-RELEASE</version>
 	<packaging>jar</packaging>
 
-	<name>lib</name>
+	<name>pad</name>
 	<description>
 		The basic development kit, which encapsulates common features in projects such as JPA, file search, encryption and decryption, makes development easier.
 		2.0.0-RELEASE:jpa

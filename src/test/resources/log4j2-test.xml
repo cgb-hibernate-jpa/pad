@@ -11,9 +11,9 @@
 			<PatternLayout
 				pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
 		</Console>
-		<RollingFile name="libFileAppender"
-			fileName="../logs/lib.log"
-			filePattern="../logs/lib-%d{MM-dd-yyyy}-%i.log">
+		<RollingFile name="padFileAppender"
+			fileName="../logs/pad.log"
+			filePattern="../logs/pad-%d{MM-dd-yyyy}-%i.log">
 			<PatternLayout>
 				<pattern>%d{HH:mm:ss.SSS} [%t] %X{id} %X{username} %-5level
 					%c{36}
@@ -31,16 +31,16 @@
 				additivity="false">关闭 -->
 			<appender-ref ref="Console" />
 		</root>
-		<logger name="com.github.emailtohl.lib" level="debug">
+		<logger name="com.github.emailtohl.pad" level="debug">
 		</logger>
 		<logger name="org.springframework" level="info">
-			<!-- <appender-ref ref="libFileAppender" /> -->
+			<!-- <appender-ref ref="padFileAppender" /> -->
 		</logger>
 		<logger name="org.hibernate" level="info">
-			<!-- <appender-ref ref="libFileAppender" /> -->
+			<!-- <appender-ref ref="padFileAppender" /> -->
 		</logger>
 		<logger name="org.apache" level="info">
-			<!-- <appender-ref ref="libFileAppender" /> -->
+			<!-- <appender-ref ref="padFileAppender" /> -->
 		</logger>
 		<!-- <logger name="org.hibernate.type.descriptor.sql" level="trace"></logger> -->
 	</loggers>
