@@ -13,16 +13,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.SAXException;
 
-import com.github.emailtohl.pad.xml.Elem;
-
-public class ElemTest {
+public class XmlKeyTest {
 
 	@Before
 	public void setUp() throws Exception {
 	}
 
 	@Test
-	public void testElemString() throws ParserConfigurationException, SAXException, IOException {
+	public void testEquals() throws SAXException {
 		String axml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + 
 				"<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n" + 
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + 
@@ -64,8 +62,8 @@ public class ElemTest {
 				"	</description>\r\n" + 
 				"</project>";
 		
-		Elem a = new Elem(axml);
-		Elem b = new Elem(bxml);
+		XmlKey a = new XmlKey(axml);
+		XmlKey b = new XmlKey(bxml);
 		
 		assertEquals(a, b);
 		assertEquals(a.attrs, b.attrs);
@@ -75,7 +73,7 @@ public class ElemTest {
 		assertEquals(a.hashCode(), b.hashCode());
 		assertEquals(a.attrs.hashCode(), b.attrs.hashCode());
 		
-		Set<Elem> set = new HashSet<Elem>();
+		Set<XmlKey> set = new HashSet<XmlKey>();
 		set.add(a);
 		
 		assertTrue(set.contains(b));

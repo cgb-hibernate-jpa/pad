@@ -11,7 +11,7 @@ import com.github.emailtohl.pad.jpa.Operator;
 import com.github.emailtohl.pad.util.LocalDateUtil;
 
 public class SessionForm extends SpringSession {
-	private static final long getTime(LocalDate localDate) {
+	private static long getTime(LocalDate localDate) {
 		return LocalDateUtil.toDate(localDate).getTime();
 	}
 	

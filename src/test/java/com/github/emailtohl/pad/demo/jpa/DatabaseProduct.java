@@ -84,8 +84,8 @@ public enum DatabaseProduct {
     public DataSourceConfiguration configuration;
     public String hibernateDialect;
 
-    private DatabaseProduct(DataSourceConfiguration configuration,
-                            String hibernateDialect) {
+    DatabaseProduct(DataSourceConfiguration configuration,
+                    String hibernateDialect) {
         this.configuration = configuration;
         this.hibernateDialect = hibernateDialect;
     }

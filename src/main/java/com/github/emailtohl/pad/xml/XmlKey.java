@@ -1,5 +1,13 @@
 package com.github.emailtohl.pad.xml;
 
+import com.github.emailtohl.pad.exception.InnerDataStateException;
+import org.springframework.util.StringUtils;
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,22 +15,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.springframework.util.StringUtils;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-import org.xml.sax.SAXException;
-
-import com.github.emailtohl.pad.exception.InnerDataStateException;
 
 /**
  * 自定义的xml元素数据模型，但满足自定义的equals hashcode，可在容器中识别 使用场景，mock 以xml作为输入输出的接口：
@@ -32,7 +24,7 @@ import com.github.emailtohl.pad.exception.InnerDataStateException;
  * @author helei
  *
  */
-public class Elem {
+public class XmlKey {
 	private static final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 	/**
 	 * 节点名字
@@ -49,14 +41,14 @@ public class Elem {
 	/**
 	 * 子节点
 	 */
-	public final List<Elem> children = new ArrayList<Elem>();
+	public final List<XmlKey> children = new ArrayList<XmlKey>();
 
 	/**
 	 * 从Element中转成本类实例
 	 * 
 	 * @param element org.w3c.dom.Element
 	 */
-	public Elem(Element element) {
+	public XmlKey(Element element) {
 		this.name = element.getNodeName();
 		fillSelf(element);
 	}
@@ -67,7 +59,7 @@ public class Elem {
 	 * @param xmlContent xml的文本
 	 * @throws SAXException If any parse errors occur
 	 */
-	public Elem(String xmlContent) throws SAXException {
+	public XmlKey(String xmlContent) throws SAXException {
 		Element element = getElement(xmlContent).getDocumentElement();
 		this.name = element.getNodeName();
 		fillSelf(element);
@@ -100,7 +92,7 @@ public class Elem {
 			Node node = nodeList.item(i);
 			if (node instanceof Element) {
 				Element element = (Element) node;
-				Elem el = new Elem(element);
+				XmlKey el = new XmlKey(element);
 				this.children.add(el);
 			} else if (node instanceof Attr) {
 				Attr attr = (Attr) node;
@@ -127,7 +119,7 @@ public class Elem {
 
 	private int childrenHashCode() {
 		int result = 1;
-		for (Elem e : children) {
+		for (XmlKey e : children) {
 			result = result + e.hashCode();
 		}
 		return result;
@@ -149,7 +141,7 @@ public class Elem {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Elem other = (Elem) obj;
+		XmlKey other = (XmlKey) obj;
 		if (!attrs.equals(other.attrs))
 			return false;
 		if (!children.containsAll(other.children) || !other.children.containsAll(children))
@@ -201,7 +193,7 @@ public class Elem {
 	private Object[] alternateTextsAndElements() {
 		Object[] arr = new Object[texts.size() + children.size()];
 		Iterator<String> itext = texts.iterator();
-		Iterator<Elem> ichildren = children.iterator();
+		Iterator<XmlKey> ichildren = children.iterator();
 		int i = 0;
 		while (itext.hasNext() && ichildren.hasNext()) {
 			arr[i++] = itext.next();

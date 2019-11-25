@@ -378,7 +378,8 @@ public class EntityInspectorTest {
 	}
 
 	boolean equal(double num1, double num2) {
-		if ((num1 - num2 > -0.000001) && (num1 - num2) < 0.000001)
+		double s = num1 - num2;
+		if (s > -0.000001 && s < 0.000001)
 			return true;
 		else
 			return false;
