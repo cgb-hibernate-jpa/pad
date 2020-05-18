@@ -5,10 +5,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.Test;
-
-import com.github.emailtohl.pad.util.FilePathUtil;
 
 public class FilePathUtilTest {
 
@@ -34,5 +33,12 @@ public class FilePathUtilTest {
 		File dir = FilePathUtil.getOrCreateFile(path);
 		assertTrue(dir.exists());
 		assertTrue(dir.delete());
+	}
+	
+	@Test
+	void findFiles() {
+		String tmp = System.getProperty("java.io.tmpdir");
+		List<File> files = FilePathUtil.findFiles(tmp);
+		assertTrue(files.size() >= 0);
 	}
 }

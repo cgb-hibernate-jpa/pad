@@ -2,6 +2,9 @@ package com.github.emailtohl.pad.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 
 import com.github.emailtohl.pad.ConstantPattern;
@@ -85,5 +88,68 @@ public class FilePathUtil {
 			throw new IOException("create file " + file.getAbsolutePath() + " failed");
 		}
 		return file;
+	}
+	
+	/**
+	 * 查找目录中的所有文件
+	 *
+	 * @param dir 文件系统的文件夹
+	 * @return
+	 */
+	public static List<File> findFiles(String dir) {
+		File d = new File(dir);
+		return findFiles(d);
+	}
+
+	/**
+	 * 查找目录中的所有文件
+	 *
+	 * @param f 文件系统的文件或文件夹
+	 * @return
+	 */
+	public static List<File> findFiles(File f) {
+		List<File> files = new ArrayList<>();
+		File[] arr = null;
+		if (f.isFile()) {
+			arr = new File[] { f };
+		} else if (f.isDirectory()) {
+			arr = f.listFiles();
+		}
+		BreadthFirst bf = new BreadthFirst(arr);
+		bf.appendTo(files);
+		return files;
+	}
+
+	private static class BreadthFirst {
+
+		LinkedList<File> queue = new LinkedList<>();
+
+		BreadthFirst(File[] files) {
+			if (files == null) {
+				return;
+			}
+			for (File f : files) {
+				queue.add(f);
+			}
+		}
+
+		void appendTo(List<File> files) {
+			while (queue.size() > 0) {
+				LinkedList<File> items = new LinkedList<>(queue);
+				queue.clear();
+				for (File f : items) {
+					if (f.isDirectory()) {
+						File[] arr = f.listFiles();
+						if (arr != null) {
+							for (File sf : arr) {
+								queue.add(sf);
+							}
+						}
+					} else if (f.isFile()) {
+						files.add(f);
+					}
+				}
+			}
+		}
 	}
 }
